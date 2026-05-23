@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { 
   Plus, Search, UserRound, Mail, Phone, MapPin, 
-  Loader2, AlertCircle, Trash2, 
+  Loader2, AlertCircle, Trash2, ExternalLink,
   Edit3, DollarSign, CheckCircle2, X, Star, Calendar, 
-  LayoutGrid, Table, Download, CreditCard
+  LayoutGrid, Table, Download, CreditCard,
+  ShieldCheck, ArrowUpRight, ArrowDownLeft
 } from 'lucide-react';
 
 interface LedgerEntry {
@@ -27,6 +28,7 @@ interface Customer {
   type: 'Distributor' | 'Wholesaler' | 'Retail Partner' | 'Key Account';
   rating: number;
   totalOrders: number;
+  lastOrderDate: string;
   ledger: LedgerEntry[];
 }
 
@@ -48,6 +50,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
     creditLimit: 500000.00,
     type: 'Key Account',
     rating: 4.9,
+    lastOrderDate: '2023-11-20',
     totalOrders: 14,
     ledger: [
       { id: 'cl-1-1', date: '2026-05-02', type: 'invoice', label: 'Sales Invoice #SI-4091', amount: 85000.00, isCredit: true },
@@ -66,6 +69,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
     creditLimit: 300000.00,
     type: 'Distributor',
     rating: 4.7,
+    lastOrderDate: '2023-11-25',
     totalOrders: 28,
     ledger: [
       { id: 'cl-2-1', date: '2026-04-20', type: 'invoice', label: 'Sales Invoice #SI-3891', amount: 200000.00, isCredit: true },
@@ -84,6 +88,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
     creditLimit: 200000.00,
     type: 'Retail Partner',
     rating: 4.5,
+    lastOrderDate: '2023-11-10',
     totalOrders: 9,
     ledger: [
       { id: 'cl-3-1', date: '2026-04-10', type: 'invoice', label: 'Sales Invoice #SI-3721', amount: 35000.00, isCredit: true },
@@ -101,6 +106,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
     creditLimit: 150000.00,
     type: 'Wholesaler',
     rating: 4.8,
+    lastOrderDate: '2023-11-15',
     totalOrders: 19,
     ledger: [
       { id: 'cl-4-1', date: '2026-05-01', type: 'invoice', label: 'Sales Invoice #SI-4022', amount: 58500.00, isCredit: true },
@@ -118,6 +124,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
     creditLimit: 250000.00,
     type: 'Key Account',
     rating: 4.6,
+    lastOrderDate: '2023-11-18',
     totalOrders: 11,
     ledger: [
       { id: 'cl-5-1', date: '2026-05-05', type: 'invoice', label: 'Sales Invoice #SI-4102', amount: 12000.00, isCredit: true }
@@ -188,7 +195,9 @@ export const CustomersPage = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update Cache
@@ -230,7 +239,7 @@ export const CustomersPage = () => {
       document.body.removeChild(link);
       
       addToast('success', 'Customer database exported successfully as CSV!');
-    } catch (err) {
+    } catch {
       addToast('error', 'Failed to export client data.');
     }
   };
@@ -314,6 +323,7 @@ export const CustomersPage = () => {
         address: formAddress,
         type: formType,
         rating: Math.min(5, Math.max(1, ratingNum)),
+        lastOrderDate: new Date().toISOString().split('T')[0],
         creditLimit: limitNum,
         currentBalance: 0,
         totalOrders: 0,
@@ -453,7 +463,7 @@ export const CustomersPage = () => {
     },
     {
       id: 'total_credit_capacity',
-      label: 'Authorized Credit Limits',
+      label: 'Credit Limits',
       value: `₹${metrics.totalLimit.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`,
       subtext: 'Assigned trading capacity',
       icon: CreditCard,
@@ -471,6 +481,23 @@ export const CustomersPage = () => {
       valueColor: '#dc2626'
     }
   ];
+
+  const formatRelativeDate = (dateStr: string) => {
+    if (!dateStr) return 'No Orders';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    const formatted = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+    
+    if (diffDays === 0) return `${formatted} (Today)`;
+    if (diffDays === 1) return `${formatted} (Yesterday)`;
+    if (diffDays < 30) return `${formatted} (${diffDays} days ago)`;
+    if (diffDays < 60) return `${formatted} (1 month ago)`;
+    return formatted;
+  };
 
   return (
     <div className="fade-in" style={{ animation: 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}>
@@ -838,36 +865,63 @@ export const CustomersPage = () => {
         }
       `}</style>
 
-      {/* Header Panel */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+      {/* HEADER SECTION */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px' }}>
         <div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
-            Client Relationships Directory
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, marginTop: '4px', margin: 0 }}>
-            Oversee outstanding client balances, establish trading limits, and register payment receipts.
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.035em', margin: 0 }}>Customer Management</h1>
+          <p style={{ color: '#64748b', marginTop: '6px', fontWeight: 600, fontSize: '0.94rem' }}>
+            Manage customer balances, credit limits, and payment records.
           </p>
         </div>
-        
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button 
             onClick={handleExportCustomers}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 18px', background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontWeight: 700, fontSize: '0.85rem', color: '#475569', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#ffffff'; }}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              borderRadius: '14px', 
+              padding: '12px 20px', 
+              fontWeight: 850,
+              cursor: 'pointer',
+              border: '1.5px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#475569',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.borderColor = '#94a3b8';
+              e.currentTarget.style.color = '#1e293b';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.borderColor = '#cbd5e1';
+              e.currentTarget.style.color = '#475569';
+            }}
           >
-            <Download size={16} />
-            Export DB
+            <Download size={18} /> Export
           </button>
-          
+
           <button 
             onClick={handleOpenOnboard}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: 'linear-gradient(135deg, #6366f1 0%, #9333ea 100%)', border: 'none', borderRadius: '14px', fontWeight: 700, fontSize: '0.85rem', color: '#ffffff', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)', transition: 'all 0.2s' }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            className="btn-primary" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              borderRadius: '14px', 
+              padding: '12px 24px', 
+              fontWeight: 800,
+              cursor: 'pointer',
+              border: 'none',
+              background: 'var(--primary-glow)',
+              color: 'white',
+              boxShadow: '0 8px 20px -4px rgba(99, 102, 241, 0.2)'
+            }}
           >
-            <Plus size={16} strokeWidth={2.5} />
-            Onboard Client
+            <Plus size={20} strokeWidth={2.5} /> Add Customer
           </button>
         </div>
       </div>
@@ -891,42 +945,91 @@ export const CustomersPage = () => {
         })}
       </div>
 
-      {/* Filter and Control Panel */}
-      <div className="search-container">
-        {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-          <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-          <input 
-            type="text" 
-            placeholder="Search clients by name, contact, location or tag..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '12px 16px 12px 46px', border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '0.88rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
-          />
+      {/* FILTER BAR AND SMART SEARCH */}
+      <div className="search-container" style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', flex: 1 }}>
+          {/* Search Input */}
+          <div style={{ position: 'relative', width: '350px' }}>
+            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text" 
+              placeholder="Search customer name, contact or tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ 
+                width: '100%', 
+                padding: '10px 16px 10px 44px', 
+                border: '1.5px solid #F1F5F9', 
+                background: '#F8FAFC', 
+                borderRadius: '12px', 
+                fontWeight: 650, 
+                fontSize: '0.85rem',
+                outline: 'none', 
+                boxSizing: 'border-box',
+                transition: 'all 0.2s'
+              }}
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Tab Controls */}
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '0px' }}>
+            <button onClick={() => setActiveTab('all')} className={`filter-tab ${activeTab === 'all' ? 'active' : ''}`}>
+              All Accounts
+            </button>
+            <button onClick={() => setActiveTab('credit')} className={`filter-tab ${activeTab === 'credit' ? 'active' : ''}`}>
+              Outstanding Debts
+            </button>
+            <button onClick={() => setActiveTab('key')} className={`filter-tab ${activeTab === 'key' ? 'active' : ''}`}>
+              Key Accounts
+            </button>
+            <button onClick={() => setActiveTab('distributor')} className={`filter-tab ${activeTab === 'distributor' ? 'active' : ''}`}>
+              Distributors
+            </button>
+            <button onClick={() => setActiveTab('retail')} className={`filter-tab ${activeTab === 'retail' ? 'active' : ''}`}>
+              Retail
+            </button>
+          </div>
         </div>
 
-        {/* Tab Filters */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <button className={`filter-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>All Accounts</button>
-          <button className={`filter-tab ${activeTab === 'credit' ? 'active' : ''}`} onClick={() => setActiveTab('credit')}>Outstanding Debts</button>
-          <button className={`filter-tab ${activeTab === 'key' ? 'active' : ''}`} onClick={() => setActiveTab('key')}>Key Accounts</button>
-          <button className={`filter-tab ${activeTab === 'distributor' ? 'active' : ''}`} onClick={() => setActiveTab('distributor')}>Distributors</button>
-          <button className={`filter-tab ${activeTab === 'retail' ? 'active' : ''}`} onClick={() => setActiveTab('retail')}>Retail</button>
-        </div>
-
-        {/* View Mode Toggle */}
-        <div style={{ display: 'flex', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '3px', background: '#f8fafc', marginLeft: 'auto' }}>
+        {/* View Mode Toggle (Grid vs. Table) */}
+        <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '12px', gap: '2px' }}>
           <button 
             onClick={() => setViewMode('grid')}
-            style={{ border: 'none', background: viewMode === 'grid' ? '#ffffff' : 'transparent', color: viewMode === 'grid' ? '#6366f1' : '#64748b', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 14px', border: 'none', borderRadius: '9px',
+              background: viewMode === 'grid' ? '#ffffff' : 'transparent',
+              color: viewMode === 'grid' ? '#6366f1' : '#64748b',
+              fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+              boxShadow: viewMode === 'grid' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.2s',
+              lineHeight: 1
+            }}
           >
-            <LayoutGrid size={16} />
+            <LayoutGrid size={14} /> Grid
           </button>
           <button 
             onClick={() => setViewMode('table')}
-            style={{ border: 'none', background: viewMode === 'table' ? '#ffffff' : 'transparent', color: viewMode === 'table' ? '#6366f1' : '#64748b', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 14px', border: 'none', borderRadius: '9px',
+              background: viewMode === 'table' ? '#ffffff' : 'transparent',
+              color: viewMode === 'table' ? '#6366f1' : '#64748b',
+              fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+              boxShadow: viewMode === 'table' ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.2s',
+              lineHeight: 1
+            }}
           >
-            <Table size={16} />
+            <Table size={14} /> Table
           </button>
         </div>
       </div>
@@ -957,9 +1060,9 @@ export const CustomersPage = () => {
                       <span className={`type-pill ${cust.type === 'Key Account' ? 'type-key' : cust.type === 'Distributor' ? 'type-distributor' : cust.type === 'Wholesaler' ? 'type-wholesaler' : 'type-retail'}`}>
                         {cust.type}
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#d97706' }}>
-                        <Star size={12} fill="#d97706" />
-                        {cust.rating.toFixed(1)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8' }}>
+                        <Calendar size={12} />
+                        {formatRelativeDate(cust.lastOrderDate)}
                       </div>
                     </div>
                   </div>
@@ -983,7 +1086,7 @@ export const CustomersPage = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Mail size={14} color="#94a3b8" />
-                    <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{cust.email}</span>
+                    <span style={{ textOverflow: 'ellipsis', overflowX: 'auto', whiteSpace: 'nowrap' }}>{cust.email}</span>
                   </div>
                 </div>
 
@@ -993,7 +1096,7 @@ export const CustomersPage = () => {
                     <span>CREDIT UTILIZATION</span>
                     <span style={isHighRisk ? { color: '#dc2626' } : {}}>{utilizationRatio.toFixed(0)}% Used</span>
                   </div>
-                  <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '10px', overflowX: 'auto' }}>
                     <div style={{ width: `${Math.min(100, utilizationRatio)}%`, height: '100%', background: isHighRisk ? '#ef4444' : 'linear-gradient(90deg, #6366f1, #9333ea)', borderRadius: '10px' }}></div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, marginTop: '4px' }}>
@@ -1028,7 +1131,7 @@ export const CustomersPage = () => {
                 <th>Receivable Due</th>
                 <th>Credit Limit</th>
                 <th>Orders</th>
-                <th>Rating</th>
+                <th>Last Order</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
@@ -1048,9 +1151,9 @@ export const CustomersPage = () => {
                   <td style={{ color: '#64748b' }}>₹{cust.creditLimit.toLocaleString('en-IN')}</td>
                   <td>{cust.totalOrders} orders</td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#d97706', fontWeight: 700 }}>
-                      <Star size={14} fill="#d97706" />
-                      {cust.rating.toFixed(1)}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontWeight: 650 }}>
+                      <Calendar size={14} />
+                      {formatRelativeDate(cust.lastOrderDate)}
                     </div>
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
@@ -1067,124 +1170,170 @@ export const CustomersPage = () => {
         </div>
       )}
 
-      {/* DRAWER VIEW - CUSTOMER PROFILE & LEDGER */}
+      {/* ========================================= */}
+      {/* SLIDE OVER RIGHT DETAIL DRAWER */}
+      {/* ========================================= */}
       {selectedCustomer && (
-        <div className="drawer-overlay" onClick={() => setSelectedCustomer(null)}>
-          <div className="drawer-content" onClick={(e) => e.stopPropagation()}>
-            
+        <div className="right-drawer-overlay" onClick={() => setSelectedCustomer(null)}>
+          <div className="right-drawer-container" onClick={(e) => e.stopPropagation()}>
             {/* Drawer Header */}
-            <div style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Client Profile Node</h2>
-                <p style={{ color: '#64748b', fontSize: '0.78rem', fontWeight: 650, margin: '4px 0 0' }}>UID: {selectedCustomer.id}</p>
+            <div style={{ 
+              padding: '24px 30px', 
+              borderBottom: '1px solid #f1f5f9', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              background: '#f8fafc' 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={20} color="#6366f1" />
+                <span style={{ fontWeight: 850, fontSize: '1rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Customer Profile</span>
               </div>
               <button 
                 onClick={() => setSelectedCustomer(null)}
-                style={{ border: 'none', background: '#f1f5f9', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
+                style={{ background: '#ffffff', border: '1px solid #e2e8f0', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* Drawer Body Scroll */}
-            <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Drawer Content (Scrollable) */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '30px' }}>
               
-              {/* Client Info Block */}
-              <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px' }}>{selectedCustomer.name}</h3>
-                <span className={`type-pill ${selectedCustomer.type === 'Key Account' ? 'type-key' : selectedCustomer.type === 'Distributor' ? 'type-distributor' : selectedCustomer.type === 'Wholesaler' ? 'type-wholesaler' : 'type-retail'}`}>
-                  {selectedCustomer.type}
-                </span>
+              {/* Profile Card Header */}
+              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '28px' }}>
+                <div style={{ 
+                  height: '70px', width: '70px', 
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', 
+                  color: '#ffffff', borderRadius: '22px', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  fontWeight: 900, fontSize: '1.8rem',
+                  boxShadow: '0 8px 20px -6px rgba(99, 102, 241, 0.4)'
+                }}>
+                  {selectedCustomer.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>{selectedCustomer.name}</h2>
+                  <span className="type-pill type-key" style={{ marginTop: '6px' }}>{selectedCustomer.type}</span>
+                </div>
+              </div>
+
+              {/* Rating & Action Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '32px' }}>
+                <div style={{ textAlign: 'center', borderRight: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Trust Rating</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#d97706', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <Star size={16} fill="#d97706" color="#d97706" /> {selectedCustomer.rating.toFixed(1)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Sales Orders</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginTop: '4px' }}>
+                    {selectedCustomer.totalOrders} Active
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information block */}
+              <div style={{ marginBottom: '36px' }}>
+                <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 16px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                  Administrative Directory
+                </h4>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '18px', fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                    <MapPin size={16} color="#94a3b8" style={{ marginTop: '2px' }} />
-                    <span>{selectedCustomer.address}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <UserRound size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Principal Contact</div>
+                      <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 650, marginTop: '2px' }}>{selectedCustomer.contactPerson}</div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <UserRound size={16} color="#94a3b8" />
-                    <span>Contact: {selectedCustomer.contactPerson}</span>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <Mail size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Email</div>
+                      <a href={`mailto:${selectedCustomer.email}`} style={{ fontSize: '0.9rem', color: '#6366f1', fontWeight: 650, marginTop: '2px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {selectedCustomer.email} <ExternalLink size={12} />
+                      </a>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Phone size={16} color="#94a3b8" />
-                    <span>{selectedCustomer.phone}</span>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <Phone size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Phone</div>
+                      <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 650, marginTop: '2px' }}>{selectedCustomer.phone || 'N/A'}</div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Mail size={16} color="#94a3b8" />
-                    <span>{selectedCustomer.email}</span>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <MapPin size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Address</div>
+                      <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, marginTop: '2px', lineHeight: 1.4 }}>{selectedCustomer.address}</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: 0 }} />
-
-              {/* Outstanding Balance receivable panel */}
-              <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '18px' }}>
-                <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Outstanding Credit Invoice</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: selectedCustomer.currentBalance > 0 ? '#b91c1c' : '#16a34a', margin: '6px 0' }}>
-                  ₹{selectedCustomer.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b', fontWeight: 650 }}>
-                  <span>Credit Limit: ₹{selectedCustomer.creditLimit.toLocaleString('en-IN')}</span>
-                  <span>Orders: {selectedCustomer.totalOrders}</span>
+              {/* Outstanding Debt & Payment box */}
+              <div style={{ background: '#fff1f2', border: '1px solid #ffe4e6', padding: '20px', borderRadius: '20px', marginBottom: '36px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Outstanding</span>
+                      <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#e11d48', margin: '2px 0 0 0' }}>
+                        ₹{selectedCustomer.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </h3>
+                    </div>
+                    {selectedCustomer.currentBalance > 0 && (
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '0.82rem', fontWeight: 750, color: '#9f1239', marginTop: '4px' }}>
+                        <span>Due in: 8 Days</span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedCustomer.currentBalance > 0 && (
+                    <button 
+                      onClick={() => setShowReceiptModal(true)}
+                      style={{ background: '#e11d48', color: '#ffffff', border: 'none', borderRadius: '12px', padding: '10px 18px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)' }}
+                    >
+                      <CheckCircle2 size={16} /> Record Receipt
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Action Operations */}
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  onClick={() => setShowReceiptModal(true)}
-                  disabled={selectedCustomer.currentBalance === 0}
-                  style={{ flex: 1, padding: '12px', background: selectedCustomer.currentBalance === 0 ? '#f1f5f9' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: selectedCustomer.currentBalance === 0 ? '#94a3b8' : '#ffffff', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: selectedCustomer.currentBalance === 0 ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                >
-                  <CheckCircle2 size={16} />
-                  Record Receipt
-                </button>
-                
-                <button 
-                  onClick={() => handleOpenEdit(selectedCustomer)}
-                  style={{ padding: '12px 16px', background: '#ffffff', color: '#475569', border: '1.5px solid #e2e8f0', borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
-                >
-                  Edit profile
-                </button>
-
-                <button 
-                  onClick={() => setShowDeleteConfirm(true)}
-                  style={{ padding: '12px', background: '#fff1f2', color: '#e11d48', border: '1px solid #ffe4e6', borderRadius: '12px', cursor: 'pointer' }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-
-              <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: 0 }} />
-
-              {/* LEDGER ENTRIES LIST */}
+              {/* Ledger ledger history timeline */}
               <div>
-                <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Transactional Ledger</h4>
-                <p style={{ color: '#94a3b8', fontSize: '0.74rem', fontWeight: 600, margin: 0 }}>Chronological log of invoices and receipts.</p>
+                <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 18px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                  Procurement Ledger Timeline
+                </h4>
                 
                 {selectedCustomer.ledger.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: '14px', border: '1px solid #f1f5f9', color: '#94a3b8', marginTop: '16px', fontSize: '0.8rem', fontWeight: 600 }}>
-                    No ledger transactions recorded yet.
-                  </div>
+                  <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic', margin: 0 }}>No transaction history on ledger.</p>
                 ) : (
-                  <div className="ledger-list">
-                    {selectedCustomer.ledger.map((entry) => (
-                      <div key={entry.id} className={`ledger-card ${entry.type}`}>
-                        <div>
-                          <div style={{ fontSize: '0.8rem', fontWeight: 750, color: '#1e293b' }}>{entry.label}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '0.7rem', fontWeight: 650, marginTop: '2px' }}>
-                            <Calendar size={12} />
-                            <span>{entry.date}</span>
-                          </div>
+                  <div className="ledger-timeline">
+                    {selectedCustomer.ledger.map((item) => (
+                      <div key={item.id} className={`ledger-item ${item.isCredit ? 'credit' : 'debit'}`}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 750, color: '#1e293b' }}>
+                            {item.label}
+                          </span>
+                          <span style={{ 
+                            fontSize: '0.82rem', 
+                            fontWeight: 800, 
+                            color: item.isCredit ? '#e11d48' : '#059669',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '2px'
+                          }}>
+                            {item.isCredit ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
+                            {item.isCredit ? '+' : '-'}₹{item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 850, color: entry.type === 'invoice' ? '#b91c1c' : '#16a34a' }}>
-                            {entry.type === 'invoice' ? '+' : '-'} ₹{entry.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
-                          <span style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', color: entry.type === 'invoice' ? '#ef4444' : '#10b981', marginTop: '2px' }}>
-                            {entry.type === 'invoice' ? 'Debit' : 'Credit'}
-                          </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>
+                          <Calendar size={12} /> {item.date}
                         </div>
                       </div>
                     ))}
@@ -1194,6 +1343,56 @@ export const CustomersPage = () => {
 
             </div>
 
+            {/* Bottom Drawer Actions */}
+            <div style={{ 
+              padding: '20px 30px', 
+              borderTop: '1px solid #f1f5f9', 
+              background: '#f8fafc',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <button 
+                onClick={() => handleOpenEdit(selectedCustomer)}
+                style={{ 
+                  flex: 1,
+                  background: '#ffffff', 
+                  color: '#475569', 
+                  border: '1.5px solid #e2e8f0', 
+                  padding: '12px 18px', 
+                  borderRadius: '12px', 
+                  fontWeight: 700, 
+                  fontSize: '0.88rem', 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Edit3 size={16} /> Edit Customer
+              </button>
+              
+              <div style={{ position: 'relative', marginLeft: '12px' }}>
+                <button 
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{ 
+                    background: '#ffffff', 
+                    color: '#e11d48', 
+                    border: '1.5px solid #fecdd3', 
+                    padding: '12px', 
+                    borderRadius: '12px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Delete Customer"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1243,7 +1442,7 @@ export const CustomersPage = () => {
                   <select 
                     className="premium-input"
                     value={formType}
-                    onChange={(e) => setFormType(e.target.value as any)}
+                    onChange={(e) => setFormType(e.target.value as Customer['type'])}
                   >
                     <option value="Wholesaler">Wholesaler</option>
                     <option value="Distributor">Distributor</option>

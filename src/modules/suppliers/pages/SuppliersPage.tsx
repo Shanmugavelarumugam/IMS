@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { 
   Plus, Search, UserRound, Mail, Phone, MapPin, 
   Loader2, ExternalLink, TrendingUp, AlertCircle, Trash2, 
-  Edit3, DollarSign, CheckCircle2, X, Star, Calendar, 
+  Edit3, IndianRupee, CheckCircle2, X, Star, Calendar, 
   ShieldCheck, ArrowUpRight, ArrowDownLeft,
   LayoutGrid, Table, Download, Settings
 } from 'lucide-react';
@@ -131,7 +131,7 @@ export const SuppliersPage = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'debt' | 'elite' | 'oem' | 'logistics'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   
   // Card Configurations
   const [activeCardIds, setActiveCardIds] = useState<string[]>([
@@ -196,8 +196,8 @@ export const SuppliersPage = () => {
           setSuppliers(DEFAULT_SUPPLIERS);
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed fetching supply network data');
+    } catch (err) {
+      setError((err as Error).message || 'Failed fetching supply network data');
       addToast('error', 'Connection to supply ledger failed');
     } finally {
       setLoading(false);
@@ -205,7 +205,9 @@ export const SuppliersPage = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSuppliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update localStorage helper
@@ -248,7 +250,7 @@ export const SuppliersPage = () => {
       document.body.removeChild(link);
       
       addToast('success', 'Supplier database exported successfully as CSV!');
-    } catch (err) {
+    } catch {
       addToast('error', 'Failed to export supplier data.');
     }
   };
@@ -465,7 +467,7 @@ export const SuppliersPage = () => {
       label: 'Outstanding Payables',
       value: `₹${metrics.totalLiability.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       subtext: 'Pending payments',
-      icon: DollarSign,
+      icon: IndianRupee,
       color: '#e11d48',
       className: 'red',
       valueColor: '#e11d48'
@@ -1218,7 +1220,7 @@ export const SuppliersPage = () => {
                    </div>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>
                      <MapPin size={16} color="#94a3b8" /> 
-                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                     <span style={{ overflowX: 'auto', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                        {sup.address || 'Global Sourcing'}
                      </span>
                    </div>
@@ -1327,7 +1329,7 @@ export const SuppliersPage = () => {
                           title="Record Payment"
                           style={{ borderColor: isDebtPositive ? '#fecdd3' : '#e2e8f0', color: isDebtPositive ? '#e11d48' : '#64748b' }}
                         >
-                          <DollarSign size={14} />
+                          <IndianRupee size={14} />
                         </button>
                         <button
                           onClick={() => {
@@ -1377,7 +1379,7 @@ export const SuppliersPage = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <ShieldCheck size={20} color="#6366f1" />
-                <span style={{ fontWeight: 850, fontSize: '1rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Vendor Node Profile</span>
+                <span style={{ fontWeight: 850, fontSize: '1rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Supplier Profile</span>
               </div>
               <button 
                 onClick={() => setSelectedSupplier(null)}
@@ -1442,7 +1444,7 @@ export const SuppliersPage = () => {
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <Mail size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
                     <div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Secure Mailing Address</div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Email</div>
                       <a href={`mailto:${selectedSupplier.email}`} style={{ fontSize: '0.9rem', color: '#6366f1', fontWeight: 650, marginTop: '2px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {selectedSupplier.email} <ExternalLink size={12} />
                       </a>
@@ -1452,7 +1454,7 @@ export const SuppliersPage = () => {
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <Phone size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
                     <div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Secure Hotline</div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Phone</div>
                       <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 650, marginTop: '2px' }}>{selectedSupplier.phone || 'N/A'}</div>
                     </div>
                   </div>
@@ -1460,7 +1462,7 @@ export const SuppliersPage = () => {
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <MapPin size={18} color="#94a3b8" style={{ marginTop: '2px' }} />
                     <div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Corporate HQ Address</div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Address</div>
                       <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, marginTop: '2px', lineHeight: 1.4 }}>{selectedSupplier.address}</div>
                     </div>
                   </div>
@@ -1469,19 +1471,26 @@ export const SuppliersPage = () => {
 
               {/* Outstanding Debt & Payment box */}
               <div style={{ background: '#fff1f2', border: '1px solid #ffe4e6', padding: '20px', borderRadius: '20px', marginBottom: '36px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Current Active Liability</span>
-                    <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#e11d48', margin: '4px 0 0 0' }}>
-                      ₹{selectedSupplier.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Outstanding</span>
+                      <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#e11d48', margin: '2px 0 0 0' }}>
+                        ₹{selectedSupplier.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </h3>
+                    </div>
+                    {selectedSupplier.currentBalance > 0 && (
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '0.82rem', fontWeight: 750, color: '#9f1239', marginTop: '4px' }}>
+                        <span>Due in: 8 Days</span>
+                      </div>
+                    )}
                   </div>
                   {selectedSupplier.currentBalance > 0 && (
                     <button 
                       onClick={() => setShowPaymentModal(true)}
                       style={{ background: '#e11d48', color: '#ffffff', border: 'none', borderRadius: '12px', padding: '10px 18px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)' }}
                     >
-                      <DollarSign size={14} /> Record Payment
+                      <IndianRupee size={14} /> Record Payment
                     </button>
                   )}
                 </div>
@@ -1531,13 +1540,14 @@ export const SuppliersPage = () => {
               padding: '20px 30px', 
               borderTop: '1px solid #f1f5f9', 
               background: '#f8fafc',
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
               <button 
                 onClick={() => handleOpenEdit(selectedSupplier)}
                 style={{ 
+                  flex: 1,
                   background: '#ffffff', 
                   color: '#475569', 
                   border: '1.5px solid #e2e8f0', 
@@ -1552,28 +1562,28 @@ export const SuppliersPage = () => {
                   gap: '8px'
                 }}
               >
-                <Edit3 size={16} /> Edit Details
+                <Edit3 size={16} /> Edit Supplier
               </button>
               
-              <button 
-                onClick={() => setShowDeleteConfirm(true)}
-                style={{ 
-                  background: '#fff1f2', 
-                  color: '#e11d48', 
-                  border: '1.5px solid #fecdd3', 
-                  padding: '12px 18px', 
-                  borderRadius: '12px', 
-                  fontWeight: 700, 
-                  fontSize: '0.88rem', 
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                <Trash2 size={16} /> Terminate Node
-              </button>
+              <div style={{ position: 'relative', marginLeft: '12px' }}>
+                <button 
+                  onClick={() => setShowDeleteConfirm(true)}
+                  style={{ 
+                    background: '#ffffff', 
+                    color: '#e11d48', 
+                    border: '1.5px solid #fecdd3', 
+                    padding: '12px', 
+                    borderRadius: '12px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Delete Supplier"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1742,7 +1752,7 @@ export const SuppliersPage = () => {
               background: '#fff1f2' 
             }}>
               <h3 style={{ margin: 0, fontWeight: 900, fontSize: '1.1rem', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <DollarSign size={18} /> Record Ledger Payment
+                <IndianRupee size={18} /> Record Ledger Payment
               </h3>
               <button 
                 onClick={() => setShowPaymentModal(false)}

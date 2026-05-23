@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, Tags, Boxes, ShoppingCart, TrendingUp, UserRound, Truck, BarChart3, LogOut, Building2, Search, AlertCircle, Settings } from 'lucide-react';
+import { Menu, LayoutDashboard, Package, Tags, Boxes, ShoppingCart, TrendingUp, UserRound, Truck, BarChart3, LogOut, Building2, Search, AlertCircle, Settings } from 'lucide-react';
 import viyanLogo from '../../assets/viyan_logo.png';
 import { authApi } from '../../core/api/auth';
 
-const Sidebar = () => {
+const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -44,6 +44,7 @@ const Sidebar = () => {
             <Link
               key={link.path}
               to={link.path}
+              onClick={onClose}
               className={`nav-item ${isActive ? 'active' : ''}`}
             >
               <Icon size={20} strokeWidth={2.4} />
@@ -54,7 +55,7 @@ const Sidebar = () => {
       </nav>
 
       <div className="nav-links" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginBottom: '16px' }}>
-        <Link to="/login" onClick={handleLogout} className="nav-item" style={{ color: '#ef4444' }}>
+        <Link to="/login" onClick={(e) => { if (onClose) onClose(); handleLogout(e); }} className="nav-item" style={{ color: '#ef4444' }}>
           <LogOut size={20} strokeWidth={2.4} />
           Sign Out
         </Link>
@@ -63,7 +64,7 @@ const Sidebar = () => {
   );
 };
 
-const TopBar = () => {
+const TopBar = ({ onMenuClick }: { onMenuClick: () => void }) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -120,7 +121,7 @@ const TopBar = () => {
   const hideBreadcrumbsAndSearch = location.pathname === '/app/suppliers' || location.pathname === '/app/customers';
 
   return (
-    <header style={{
+    <header className="top-bar-header" style={{
       display: 'flex', 
       justifyContent: 'space-between', 
       padding: '20px 32px 8px', 
@@ -129,22 +130,29 @@ const TopBar = () => {
       position: 'relative',
       zIndex: 999
     }}>
-      {/* 1. Dynamic Breadcrumbs (left side) */}
-      {!hideBreadcrumbsAndSearch && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            <span>{breadcrumb.category}</span>
-            <span style={{ color: '#cbd5e1' }}>/</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          className="mobile-menu-btn"
+          onClick={onMenuClick}
+        >
+          <Menu size={20} />
+        </button>
+        {/* 1. Dynamic Breadcrumbs (left side) */}
+        {!hideBreadcrumbsAndSearch && (
+          <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span>{breadcrumb.category}</span>
+              <span style={{ color: '#cbd5e1' }}>/</span>
+            </div>
+            <div style={{ fontSize: '0.96rem', fontWeight: 850, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.01em' }}>
+              {breadcrumb.active}
+            </div>
           </div>
-          <div style={{ fontSize: '0.96rem', fontWeight: 850, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.01em' }}>
-            {breadcrumb.active}
-          </div>
-        </div>
-      )}
-
+        )}
+      </div>
       {/* 2. Global Search Input with beautiful keyboard shortcut (center) */}
       {!hideBreadcrumbsAndSearch && (
-        <div style={{ position: 'relative', maxWidth: '360px', width: '100%', marginLeft: '48px', marginRight: 'auto' }}>
+        <div className="top-search-container" style={{ position: 'relative', maxWidth: '360px', width: '100%', marginLeft: '48px', marginRight: 'auto' }}>
           <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
@@ -178,14 +186,14 @@ const TopBar = () => {
             color: '#94a3b8',
             boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
             pointerEvents: 'none'
-          }}>
+          }} className="global-search-shortcut">
             ⌘K
           </div>
         </div>
       )}
 
       {/* 3. User Dropdown Menu (fixed on the right side) */}
-      <div style={{ position: 'fixed', top: '20px', right: '32px', zIndex: 1000 }}>
+      <div className="profile-dropdown-container" style={{ position: 'fixed', top: '20px', right: '32px', zIndex: 1000 }}>
         {/* Interactive Presence Pill */}
         <button 
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
@@ -205,7 +213,7 @@ const TopBar = () => {
           onMouseOver={e => { if(!isOpen) e.currentTarget.style.transform = 'translateY(-1px)'; }}
           onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          <div style={{ textAlign: 'right' }}>
+          <div className="profile-text" style={{ textAlign: 'right' }}>
             <div style={{ fontWeight: 800, color: '#111827', fontSize: '0.85rem', letterSpacing: '-0.01em' }}>
               {user?.name || 'Enterprise Agent'}
             </div>
@@ -279,25 +287,25 @@ const TopBar = () => {
             `}</style>
             
             <div style={{ padding: '8px 16px 16px', borderBottom: '1px solid #F3F4F6', marginBottom: '8px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Logged in securely</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SIGNED IN AS</div>
               <div style={{ fontSize: '0.85rem', color: '#111827', fontWeight: 600, wordBreak: 'break-all', marginTop: '4px' }}>{user?.email}</div>
             </div>
 
             <Link to="/app/profile" className="dd-item">
               <UserRound size={18} color="#6366f1" />
-              Profile Dimensions
+              My Profile
             </Link>
             
             <button className="dd-item">
               <Building2 size={18} color="#6366f1" />
-              Corporate Nodes
+              Organizations
             </button>
 
             <div style={{ height: '1px', background: '#F3F4F6', margin: '8px 0' }} />
             
             <button onClick={handleLogout} className="dd-item danger">
               <LogOut size={18} color="#EF4444" />
-              Terminate Session
+              Sign Out
             </button>
           </div>
         )}
@@ -307,6 +315,7 @@ const TopBar = () => {
 };
 
 export const RootLayout = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const navigate = useNavigate();
 
@@ -356,10 +365,15 @@ export const RootLayout = () => {
 
   return (
     <div className="app-layout">
-      <Sidebar />
+      {isMobileMenuOpen && (
+        <div className="mobile-sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+      <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
+        <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
+      </div>
       <main className="main-content">
-        <TopBar />
-        <div style={{ padding: '0 32px 32px' }}>
+        <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
+        <div style={{ paddingBottom: '32px' }}>
            <Outlet />
         </div>
       </main>
