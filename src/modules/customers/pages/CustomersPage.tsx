@@ -137,7 +137,7 @@ export const CustomersPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'credit' | 'distributor' | 'key' | 'retail'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   
   // Custom Toasts State
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -1174,8 +1174,8 @@ export const CustomersPage = () => {
       {/* SLIDE OVER RIGHT DETAIL DRAWER */}
       {/* ========================================= */}
       {selectedCustomer && (
-        <div className="right-drawer-overlay" onClick={() => setSelectedCustomer(null)}>
-          <div className="right-drawer-container" onClick={(e) => e.stopPropagation()}>
+        <div className="drawer-overlay" onClick={() => setSelectedCustomer(null)}>
+          <div className="drawer-content" onClick={(e) => e.stopPropagation()}>
             {/* Drawer Header */}
             <div style={{ 
               padding: '24px 30px', 
