@@ -124,7 +124,7 @@ const TopBar = ({ onMenuClick }: { onMenuClick: () => void }) => {
     <header className="top-bar-header" style={{
       display: 'flex', 
       justifyContent: 'space-between', 
-      padding: '20px 32px 8px', 
+      padding: '12px 32px 8px', 
       background: 'transparent',
       alignItems: 'center',
       position: 'relative',

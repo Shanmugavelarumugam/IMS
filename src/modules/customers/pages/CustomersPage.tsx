@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Plus, Search, UserRound, Mail, Phone, MapPin, 
   Loader2, AlertCircle, Trash2, ExternalLink,
-  Edit3, DollarSign, CheckCircle2, X, Star, Calendar, 
+  Edit3, DollarSign, IndianRupee, CheckCircle2, X, Star, Calendar, 
   LayoutGrid, Table, Download, CreditCard,
   ShieldCheck, ArrowUpRight, ArrowDownLeft
 } from 'lucide-react';
@@ -456,7 +456,7 @@ export const CustomersPage = () => {
       label: 'Total Receivables',
       value: `₹${metrics.totalReceivables.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       subtext: 'Outstanding credit invoices',
-      icon: DollarSign,
+      icon: IndianRupee,
       color: '#059669',
       className: 'emerald',
       valueColor: '#059669'
@@ -540,7 +540,7 @@ export const CustomersPage = () => {
           margin-bottom: 8px;
         }
         .stat-card-value {
-          font-size: 1.85rem;
+          font-size: 2.2rem;
           font-weight: 900;
           color: #0f172a;
           line-height: 1.1;
@@ -680,9 +680,15 @@ export const CustomersPage = () => {
           width: 100%;
           border-collapse: collapse;
           text-align: left;
+          position: relative;
         }
         .premium-table th {
-          background: #f8fafc;
+          background: rgba(248, 250, 252, 0.95);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          position: sticky;
+          top: 0;
+          z-index: 10;
           padding: 18px 24px;
           color: #64748b;
           font-weight: 850;
@@ -697,8 +703,10 @@ export const CustomersPage = () => {
           font-weight: 600;
           font-size: 0.88rem;
           color: #1e293b;
+          transition: background 0.2s;
         }
-        .premium-table tr:hover td { background: #f8fafc; }
+        .premium-table tr:nth-child(even) td { background: #fafbff; }
+        .premium-table tr:hover td { background: #f4f6ff; }
         .table-action-btn {
           background: #ffffff;
           border: 1.5px solid #e2e8f0;
@@ -714,10 +722,11 @@ export const CustomersPage = () => {
           padding: 0;
         }
         .table-action-btn:hover {
-          background: #6366f1;
+          background: linear-gradient(135deg, #7c3aed, #6d28d9);
           color: #ffffff;
-          border-color: #6366f1;
-          box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15);
+          border-color: #6d28d9;
+          box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+          transform: translateY(-2px);
         }
 
         /* Modals and Overlays */
@@ -1127,29 +1136,54 @@ export const CustomersPage = () => {
               <tr>
                 <th>Customer Name</th>
                 <th>Category</th>
-                <th>Primary Contact</th>
+                <th>Risk Profile</th>
+                <th>Status</th>
                 <th>Receivable Due</th>
                 <th>Credit Limit</th>
-                <th>Orders</th>
                 <th>Last Order</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredCustomers.map((cust) => (
+              {filteredCustomers.map((cust) => {
+                const utilRatio = cust.creditLimit > 0 ? (cust.currentBalance / cust.creditLimit) : 0;
+                let risk = 'Low';
+                let riskColor = '#10b981';
+                let riskBg = '#ecfdf5';
+                if (utilRatio > 0.7) { risk = 'High'; riskColor = '#ef4444'; riskBg = '#fef2f2'; }
+                else if (utilRatio > 0.4) { risk = 'Medium'; riskColor = '#f59e0b'; riskBg = '#fffbeb'; }
+                
+                let status = 'Paid';
+                let statusColor = '#10b981';
+                if (cust.currentBalance > 0 && utilRatio > 0.7) { status = 'Overdue'; statusColor = '#ef4444'; }
+                else if (cust.currentBalance > 0) { status = 'Partial'; statusColor = '#f59e0b'; }
+
+                return (
                 <tr key={cust.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedCustomer(cust)}>
-                  <td style={{ fontWeight: 850 }}>{cust.name}</td>
+                  <td style={{ fontWeight: 850 }}>
+                    <div style={{ color: '#0f172a' }}>{cust.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{cust.contactPerson}</div>
+                  </td>
                   <td>
                     <span className={`type-pill ${cust.type === 'Key Account' ? 'type-key' : cust.type === 'Distributor' ? 'type-distributor' : cust.type === 'Wholesaler' ? 'type-wholesaler' : 'type-retail'}`}>
                       {cust.type}
                     </span>
                   </td>
-                  <td>{cust.contactPerson}</td>
+                  <td>
+                    <span style={{ background: riskBg, color: riskColor, padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+                      {risk} Risk
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: statusColor, fontWeight: 700, fontSize: '0.85rem' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor }}></div>
+                      {status}
+                    </div>
+                  </td>
                   <td style={{ color: cust.currentBalance > 0 ? '#b91c1c' : '#16a34a', fontWeight: 850 }}>
                     ₹{cust.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td style={{ color: '#64748b' }}>₹{cust.creditLimit.toLocaleString('en-IN')}</td>
-                  <td>{cust.totalOrders} orders</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontWeight: 650 }}>
                       <Calendar size={14} />
@@ -1164,7 +1198,7 @@ export const CustomersPage = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -1219,17 +1253,39 @@ export const CustomersPage = () => {
               </div>
 
               {/* Rating & Action Summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #f1f5f9', marginBottom: '32px' }}>
                 <div style={{ textAlign: 'center', borderRight: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Trust Rating</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#d97706', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                    <Star size={16} fill="#d97706" color="#d97706" /> {selectedCustomer.rating.toFixed(1)}
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Trust Rating</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#d97706', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <Star size={14} fill="#d97706" color="#d97706" /> {selectedCustomer.rating.toFixed(1)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center', borderRight: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Sales Orders</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', marginTop: '4px' }}>
+                    {selectedCustomer.totalOrders} Active
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center', borderRight: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Risk Profile</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {(() => {
+                      const util = selectedCustomer.creditLimit > 0 ? selectedCustomer.currentBalance / selectedCustomer.creditLimit : 0;
+                      if (util > 0.7) return <span style={{ color: '#ef4444' }}>High Risk</span>;
+                      if (util > 0.4) return <span style={{ color: '#f59e0b' }}>Medium Risk</span>;
+                      return <span style={{ color: '#10b981' }}>Low Risk</span>;
+                    })()}
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Sales Orders</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginTop: '4px' }}>
-                    {selectedCustomer.totalOrders} Active
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Collection</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 900, marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {(() => {
+                      const util = selectedCustomer.creditLimit > 0 ? selectedCustomer.currentBalance / selectedCustomer.creditLimit : 0;
+                      if (selectedCustomer.currentBalance > 0 && util > 0.7) return <span style={{ color: '#ef4444' }}>Overdue</span>;
+                      if (selectedCustomer.currentBalance > 0) return <span style={{ color: '#f59e0b' }}>Partial</span>;
+                      return <span style={{ color: '#10b981' }}>Paid</span>;
+                    })()}
                   </div>
                 </div>
               </div>

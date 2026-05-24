@@ -63,14 +63,26 @@
 
 .nav-item:hover {
   background: var(--surface-hover);
-  color: var(--text-primary);
+  color: #7c3aed;
 }
 
 .nav-item.active {
-  background: var(--surface-color);
-  color: var(--text-primary);
-  border: 1px solid rgba(79, 70, 229, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  background: var(--surface-hover);
+  color: #6d28d9;
+  border: none;
+  box-shadow: none;
+  position: relative;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  border-radius: 0 4px 4px 0;
 }
 
 .page-header {
