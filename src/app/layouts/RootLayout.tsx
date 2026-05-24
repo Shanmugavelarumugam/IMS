@@ -4,7 +4,7 @@ import { Menu, LayoutDashboard, Package, Tags, Boxes, ShoppingCart, TrendingUp, 
 import viyanLogo from '../../assets/viyan_logo.png';
 import { authApi } from '../../core/api/auth';
 
-const Sidebar = ({ onClose }: { onClose?: () => void }) => {
+const Sidebar = ({ onClose, onResizeMouseDown }: { onClose?: () => void, onResizeMouseDown?: (e: React.MouseEvent) => void }) => {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -60,6 +60,11 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
           Sign Out
         </Link>
       </div>
+      <div 
+        className={`sidebar-resizer`}
+        onMouseDown={onResizeMouseDown} 
+        onClick={(e) => e.stopPropagation()}
+      />
     </aside>
   );
 };
@@ -118,7 +123,7 @@ const TopBar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
   const breadcrumb = getBreadcrumbs();
 
-  const hideBreadcrumbsAndSearch = location.pathname === '/app/suppliers' || location.pathname === '/app/customers';
+  const hideBreadcrumbsAndSearch = location.pathname === '/app/suppliers' || location.pathname === '/app/customers' || location.pathname === '/app/products';
 
   return (
     <header className="top-bar-header" style={{
@@ -319,6 +324,55 @@ export const RootLayout = () => {
   const [showExitModal, setShowExitModal] = useState(false);
   const navigate = useNavigate();
 
+  // Sidebar resizing state
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebarWidth');
+    return saved ? parseInt(saved, 10) : 260;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+    localStorage.setItem('sidebarWidth', sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      let newWidth = e.clientX;
+      if (newWidth < 200) newWidth = 200;
+      if (newWidth > 450) newWidth = 450;
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+        document.body.style.cursor = '';
+        document.documentElement.style.userSelect = '';
+      }
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.documentElement.style.userSelect = 'none'; // Prevent text selection while dragging
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.documentElement.style.userSelect = '';
+    };
+  }, [isResizing]);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
   useEffect(() => {
     // Keep a state in history so that we can detect popstate
     window.history.pushState(null, '', window.location.href);
@@ -364,12 +418,12 @@ export const RootLayout = () => {
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${isResizing ? 'is-resizing' : ''}`}>
       {isMobileMenuOpen && (
         <div className="mobile-sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
       )}
       <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
-        <Sidebar onClose={() => setIsMobileMenuOpen(false)} />
+        <Sidebar onClose={() => setIsMobileMenuOpen(false)} onResizeMouseDown={handleResizeMouseDown} />
       </div>
       <main className="main-content">
         <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />

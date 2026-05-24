@@ -705,9 +705,15 @@ export const SuppliersPage = () => {
           width: 100%;
           border-collapse: collapse;
           text-align: left;
+          position: relative;
         }
         .premium-table th {
-          background: #f8fafc;
+          background: rgba(248, 250, 252, 0.95);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          position: sticky;
+          top: 0;
+          z-index: 10;
           padding: 18px 24px;
           color: #64748b;
           font-weight: 850;
@@ -722,13 +728,14 @@ export const SuppliersPage = () => {
           font-weight: 600;
           font-size: 0.88rem;
           color: #1e293b;
-          transition: all 0.2s;
+          transition: background 0.2s;
         }
         .premium-table tr:last-child td {
           border-bottom: none;
         }
+        .premium-table tr:nth-child(even) td { background: #fafbff; }
         .premium-table tr:hover td {
-          background: #f8fafc;
+          background: #f4f6ff;
         }
         .table-action-btn {
           background: #ffffff;
@@ -745,10 +752,11 @@ export const SuppliersPage = () => {
           padding: 0;
         }
         .table-action-btn:hover {
-          background: #6366f1;
+          background: linear-gradient(135deg, #7c3aed, #6d28d9);
           color: #ffffff;
-          border-color: #6366f1;
-          box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15);
+          border-color: #6d28d9;
+          box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+          transform: translateY(-2px);
         }
 
         /* Glassmorphic Modal */
