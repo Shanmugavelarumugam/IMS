@@ -457,7 +457,7 @@ export const SuppliersPage = () => {
       id: 'active_suppliers',
       label: 'Active Suppliers',
       value: metrics.totalCount,
-      subtext: 'Onboarded partners',
+      subtext: 'Registered supplier accounts',
       icon: UserRound,
       color: '#6366f1',
       className: 'blue'
@@ -466,7 +466,7 @@ export const SuppliersPage = () => {
       id: 'outstanding_payables',
       label: 'Outstanding Payables',
       value: `₹${metrics.totalLiability.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      subtext: 'Pending payments',
+      subtext: 'Pending supplier payments',
       icon: IndianRupee,
       color: '#e11d48',
       className: 'red',
@@ -476,7 +476,7 @@ export const SuppliersPage = () => {
       id: 'active_purchase_orders',
       label: 'Active Purchase Orders',
       value: metrics.activeOrders,
-      subtext: 'Active POs',
+      subtext: 'Open purchase orders',
       icon: TrendingUp,
       color: '#059669',
       className: 'emerald'
@@ -504,9 +504,9 @@ export const SuppliersPage = () => {
     },
     {
       id: 'top_rated_suppliers',
-      label: 'Top Rated Suppliers',
+      label: 'Preferred Suppliers',
       value: metrics.eliteCount,
-      subtext: 'Preferred Vendors',
+      subtext: 'Preferred supplier partners',
       icon: Star,
       color: '#d97706',
       className: 'amber',
@@ -936,7 +936,7 @@ export const SuppliersPage = () => {
         <div>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.035em', margin: 0 }}>Supplier Management</h1>
           <p style={{ color: '#64748b', marginTop: '6px', fontWeight: 600, fontSize: '0.94rem' }}>
-            Track supplier performance, outstanding payments, and purchase activities.
+            Monitor supplier performance, pending payments, and procurement activities.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1057,7 +1057,7 @@ export const SuppliersPage = () => {
             <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input 
               type="text" 
-              placeholder="Search suppliers, contacts, or email..."
+              placeholder="Search suppliers by company, contact, or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ 
@@ -1089,10 +1089,10 @@ export const SuppliersPage = () => {
               All Suppliers
             </button>
             <button onClick={() => setActiveTab('debt')} className={`filter-tab ${activeTab === 'debt' ? 'active' : ''}`}>
-              Outstanding Payments
+              Pending Payments
             </button>
             <button onClick={() => setActiveTab('elite')} className={`filter-tab ${activeTab === 'elite' ? 'active' : ''}`}>
-              Top Rated
+              Preferred Suppliers
             </button>
             <button onClick={() => setActiveTab('oem')} className={`filter-tab ${activeTab === 'oem' ? 'active' : ''}`}>
               Manufacturers & Wholesalers
@@ -1253,11 +1253,11 @@ export const SuppliersPage = () => {
           <table className="premium-table">
             <thead>
               <tr>
-                <th>Supplier / Category</th>
+                <th>Supplier</th>
                 <th>Primary Contact</th>
                 <th>Purchase Orders</th>
-                <th style={{ textAlign: 'right' }}>Outstanding Amount</th>
-                <th style={{ textAlign: 'right' }}>Quick Actions</th>
+                <th style={{ textAlign: 'right' }}>Outstanding Balance</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>

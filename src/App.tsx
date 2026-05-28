@@ -24,6 +24,9 @@ import { ProfilePage } from './modules/users/pages/ProfilePage';
 import { SuppliersPage } from './modules/suppliers/pages/SuppliersPage';
 import { PurchasesPage } from './modules/purchases/pages/PurchasesPage';
 import { CustomersPage } from './modules/customers/pages/CustomersPage';
+import { SalesPage } from './modules/sales/pages/SalesPage';
+import { ReportsPage } from './modules/reports/pages/ReportsPage';
+import { SettingsPage } from './modules/settings/pages/SettingsPage';
 import './styles/App.css';
 
 function App() {
@@ -67,6 +70,9 @@ function App() {
           <Route path="purchases" element={<PurchasesPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
           <Route path="customers" element={<CustomersPage />} />
+          <Route path="sales" element={<SalesPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={
             <div style={{textAlign: 'center', padding: '100px 0'}}>

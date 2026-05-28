@@ -1,24 +1,49 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
-import { Menu, LayoutDashboard, Package, Tags, Boxes, ShoppingCart, TrendingUp, UserRound, Truck, BarChart3, LogOut, Building2, Search, AlertCircle, Settings } from 'lucide-react';
+import { Menu, LayoutDashboard, Package, Tags, Boxes, ShoppingCart, TrendingUp, UserRound, Truck, BarChart3, LogOut, Building2, Search, AlertCircle, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import viyanLogo from '../../assets/viyan_logo.png';
 import { authApi } from '../../core/api/auth';
 
-const Sidebar = ({ onClose, onResizeMouseDown }: { onClose?: () => void, onResizeMouseDown?: (e: React.MouseEvent) => void }) => {
+const Sidebar = ({ 
+  onClose, 
+  onResizeMouseDown, 
+  isCollapsed, 
+  setIsCollapsed 
+}: { 
+  onClose?: () => void, 
+  onResizeMouseDown?: (e: React.MouseEvent) => void,
+  isCollapsed: boolean,
+  setIsCollapsed: (c: boolean) => void
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const links = [
-    { path: '/app', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/app/products', icon: Package, label: 'Products' },
-    { path: '/app/categories', icon: Tags, label: 'Categories' },
-    { path: '/app/inventory', icon: Boxes, label: 'Inventory' },
-    { path: '/app/purchases', icon: ShoppingCart, label: 'Purchases' },
-    { path: '/app/sales', icon: TrendingUp, label: 'Sales' },
-    { path: '/app/customers', icon: UserRound, label: 'Customers' },
-    { path: '/app/suppliers', icon: Truck, label: 'Suppliers' },
-    { path: '/app/reports', icon: BarChart3, label: 'Reports' },
-    { path: '/app/settings', icon: Settings, label: 'Settings' },
+  const sections = [
+    {
+      title: 'Operations',
+      links: [
+        { path: '/app', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/app/products', icon: Package, label: 'Products' },
+        { path: '/app/categories', icon: Tags, label: 'Categories' },
+        { path: '/app/inventory', icon: Boxes, label: 'Stock Management' },
+      ]
+    },
+    {
+      title: 'Management',
+      links: [
+        { path: '/app/purchases', icon: ShoppingCart, label: 'Purchase Orders' },
+        { path: '/app/suppliers', icon: Truck, label: 'Suppliers' },
+        { path: '/app/sales', icon: TrendingUp, label: 'Sales Orders' },
+        { path: '/app/customers', icon: UserRound, label: 'Customers' },
+      ]
+    },
+    {
+      title: 'System',
+      links: [
+        { path: '/app/reports', icon: BarChart3, label: 'Analytics' },
+        { path: '/app/settings', icon: Settings, label: 'Settings' },
+      ]
+    }
   ];
 
   const handleLogout = async (e: React.MouseEvent) => {
@@ -29,35 +54,68 @@ const Sidebar = ({ onClose, onResizeMouseDown }: { onClose?: () => void, onResiz
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      <button 
+        className="collapse-toggle-btn hide-on-mobile" 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        style={{ outline: 'none' }}
+      >
+        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
       <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <img src={viyanLogo} alt="Viyan" style={{ height: '32px', width: '32px', borderRadius: '8px' }} />
-        <span style={{ background: 'var(--primary-glow)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Viyan
-        </span>
+        <img src={viyanLogo} alt="Viyan" style={{ height: '32px', width: '32px', borderRadius: '8px', flexShrink: 0 }} />
+        {!isCollapsed && (
+          <span style={{ 
+            background: 'var(--primary-glow)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent',
+            fontWeight: 800,
+            fontSize: '1.25rem',
+            letterSpacing: '-0.02em'
+          }}>
+            Viyan
+          </span>
+        )}
       </div>
-      <nav className="nav-links" style={{ flex: 1 }}>
-        {links.map((link) => {
-          const Icon = link.icon;
-          const isActive = location.pathname === link.path;
-          return (
-            <Link
-              key={link.path}
-              to={link.path}
-              onClick={onClose}
-              className={`nav-item ${isActive ? 'active' : ''}`}
-            >
-              <Icon size={20} strokeWidth={2.4} />
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
+      
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        {sections.map((section) => (
+          <div key={section.title} style={{ marginBottom: '12px' }}>
+            <div className="nav-section-title">{section.title}</div>
+            <nav className="nav-links">
+              {section.links.map((link) => {
+                const Icon = link.icon;
+                const isActive = location.pathname === link.path;
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={onClose}
+                    className={`nav-item ${isActive ? 'active' : ''}`}
+                    data-tooltip={link.label}
+                  >
+                    <Icon size={20} strokeWidth={isActive ? 2.6 : 2.2} />
+                    {!isCollapsed && <span>{link.label}</span>}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        ))}
+      </div>
 
       <div className="nav-links" style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginBottom: '16px' }}>
-        <Link to="/login" onClick={(e) => { if (onClose) onClose(); handleLogout(e); }} className="nav-item" style={{ color: '#ef4444' }}>
+        <Link 
+          to="/login" 
+          onClick={(e) => { if (onClose) onClose(); handleLogout(e); }} 
+          className="nav-item" 
+          style={{ color: '#ef4444' }}
+          data-tooltip="Logout"
+        >
           <LogOut size={20} strokeWidth={2.4} />
-          Sign Out
+          {!isCollapsed && <span>Logout</span>}
         </Link>
       </div>
       <div 
@@ -123,7 +181,7 @@ const TopBar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
   const breadcrumb = getBreadcrumbs();
 
-  const hideBreadcrumbsAndSearch = location.pathname === '/app/suppliers' || location.pathname === '/app/customers' || location.pathname === '/app/products';
+  const hideBreadcrumbsAndSearch = location.pathname === '/app/suppliers' || location.pathname === '/app/customers' || location.pathname === '/app/products' || location.pathname === '/app/reports';
 
   return (
     <header className="top-bar-header" style={{
@@ -324,21 +382,45 @@ export const RootLayout = () => {
   const [showExitModal, setShowExitModal] = useState(false);
   const navigate = useNavigate();
 
+  // Sidebar collapse state
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
+
   // Sidebar resizing state
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('sidebarWidth');
-    return saved ? parseInt(saved, 10) : 260;
+    return saved ? parseInt(saved, 10) : 240;
   });
   const [isResizing, setIsResizing] = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
-    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+    if (location.pathname === '/app/reports') {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', isCollapsed.toString());
+    if (isCollapsed) {
+      document.documentElement.style.setProperty('--sidebar-width', '72px');
+    } else {
+      document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+    }
+  }, [isCollapsed, sidebarWidth]);
+
+  useEffect(() => {
     localStorage.setItem('sidebarWidth', sidebarWidth.toString());
   }, [sidebarWidth]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
+      if (!isResizing || isCollapsed) return;
       let newWidth = e.clientX;
       if (newWidth < 200) newWidth = 200;
       if (newWidth > 450) newWidth = 450;
@@ -366,11 +448,13 @@ export const RootLayout = () => {
       document.body.style.cursor = '';
       document.documentElement.style.userSelect = '';
     };
-  }, [isResizing]);
+  }, [isResizing, isCollapsed]);
 
   const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsResizing(true);
+    if (!isCollapsed) {
+      setIsResizing(true);
+    }
   };
 
   useEffect(() => {
@@ -423,7 +507,12 @@ export const RootLayout = () => {
         <div className="mobile-sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
       )}
       <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
-        <Sidebar onClose={() => setIsMobileMenuOpen(false)} onResizeMouseDown={handleResizeMouseDown} />
+        <Sidebar 
+          onClose={() => setIsMobileMenuOpen(false)} 
+          onResizeMouseDown={handleResizeMouseDown} 
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+        />
       </div>
       <main className="main-content">
         <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />

@@ -446,18 +446,18 @@ export const CustomersPage = () => {
   const cardDefinitions = [
     {
       id: 'total_clients',
-      label: 'Active Clients',
+      label: 'Active Customers',
       value: metrics.totalCount,
-      subtext: 'Registered trading accounts',
+      subtext: 'Registered customer accounts',
       icon: UserRound,
       color: '#6366f1',
       className: 'blue'
     },
     {
       id: 'total_receivables',
-      label: 'Total Receivables',
+      label: 'Outstanding Receivables',
       value: `₹${metrics.totalReceivables.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      subtext: 'Outstanding credit invoices',
+      subtext: 'Pending customer payments',
       icon: IndianRupee,
       color: '#059669',
       className: 'emerald',
@@ -465,18 +465,18 @@ export const CustomersPage = () => {
     },
     {
       id: 'total_credit_capacity',
-      label: 'Credit Limits',
+      label: 'Total Credit Limits',
       value: `₹${metrics.totalLimit.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`,
-      subtext: 'Assigned trading capacity',
+      subtext: 'Assigned customer credit',
       icon: CreditCard,
       color: '#8b5cf6',
       className: 'purple'
     },
     {
       id: 'active_overdue',
-      label: 'Credit Risk Accounts',
+      label: 'High Risk Accounts',
       value: metrics.overdueCount,
-      subtext: 'Balances > 70% limit',
+      subtext: 'Accounts above 70% credit usage',
       icon: AlertCircle,
       color: '#dc2626',
       className: 'rose',
@@ -881,7 +881,7 @@ export const CustomersPage = () => {
         <div>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.035em', margin: 0 }}>Customer Management</h1>
           <p style={{ color: '#64748b', marginTop: '6px', fontWeight: 600, fontSize: '0.94rem' }}>
-            Manage customer balances, credit limits, and payment records.
+            Track customer accounts, receivables, credit limits, and payment history.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -999,7 +999,7 @@ export const CustomersPage = () => {
             <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input 
               type="text" 
-              placeholder="Search customer name, contact or tag..."
+              placeholder="Search customers by name, contact, or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ 
@@ -1031,10 +1031,10 @@ export const CustomersPage = () => {
               All Accounts
             </button>
             <button onClick={() => setActiveTab('credit')} className={`filter-tab ${activeTab === 'credit' ? 'active' : ''}`}>
-              Outstanding Debts
+              Pending Payments
             </button>
             <button onClick={() => setActiveTab('key')} className={`filter-tab ${activeTab === 'key' ? 'active' : ''}`}>
-              Key Accounts
+              Key Customers
             </button>
             <button onClick={() => setActiveTab('distributor')} className={`filter-tab ${activeTab === 'distributor' ? 'active' : ''}`}>
               Distributors
@@ -1171,13 +1171,13 @@ export const CustomersPage = () => {
           <table className="premium-table">
             <thead>
               <tr>
-                <th>Customer Name</th>
+                <th>Customer</th>
                 <th>Category</th>
-                <th>Risk Profile</th>
+                <th>Risk Level</th>
                 <th>Status</th>
-                <th>Receivable Due</th>
+                <th>Amount Due</th>
                 <th>Credit Limit</th>
-                <th>Last Order</th>
+                <th>Last Purchase</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>

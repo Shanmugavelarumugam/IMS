@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Plus, Search, ShoppingCart, FileText, 
-  Activity, DollarSign, Clock, AlertTriangle,
-  X, Trash2, Grid, Table, Download, Settings, Building2, User
+  Plus, Search, TrendingUp, CheckCircle2, Clock, 
+  X, Trash2, User, Grid, Table, Download, Settings, FileText, ShoppingBag
 } from 'lucide-react';
 
-interface POItem {
+interface SalesItem {
   name: string;
   qty: number;
   unitPrice: number;
 }
 
-interface PurchaseOrder {
+interface SalesOrder {
   id: string;
-  poNumber: string;
-  supplierName: string;
-  status: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  orderNumber: string;
+  customerName: string;
+  status: 'PENDING_DISPATCH' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
-  deliveryDate: string;
-  warehouseBranch: string;
-  items: POItem[];
+  dispatchDate: string;
+  paymentMode: 'UPI' | 'Card' | 'Bank Transfer' | 'Net Banking' | 'Cash';
+  items: SalesItem[];
   totalAmount: number;
+  discountPercentage: number;
+  taxAmount: number;
   notes?: string;
 }
 
@@ -30,81 +31,71 @@ interface ToastMessage {
   text: string;
 }
 
-const DEFAULT_PURCHASES: PurchaseOrder[] = [
+const DEFAULT_SALES: SalesOrder[] = [
   {
-    id: 'po-1',
-    poNumber: 'PO-2026-001',
-    supplierName: 'Acme Hardware Corporates',
+    id: 'so-1',
+    orderNumber: 'SO-2026-001',
+    customerName: 'Aman Sharma (Google Dev)',
     status: 'COMPLETED',
-    createdAt: '2026-05-01',
-    deliveryDate: '2026-05-10',
-    warehouseBranch: 'Mumbai Central Hub',
+    createdAt: '2026-05-10',
+    dispatchDate: '2026-05-12',
+    paymentMode: 'UPI',
     items: [
-      { name: 'MacBook Pro 16" M3 Max', qty: 10, unitPrice: 289900 },
-      { name: 'Dell UltraSharp 32" 4K Monitor', qty: 5, unitPrice: 74900 }
+      { name: 'MacBook Pro 16" M3 Max', qty: 1, unitPrice: 289900 }
     ],
-    totalAmount: 3273500.00,
-    notes: 'Standard bi-annual hardware replenishment cycle.'
+    totalAmount: 289900.00,
+    discountPercentage: 0,
+    taxAmount: 52182.00,
+    notes: 'Direct corporate allocation dispatch.'
   },
   {
-    id: 'po-2',
-    poNumber: 'PO-2026-002',
-    supplierName: 'Logitech Retail Distributors',
-    status: 'PENDING',
-    createdAt: '2026-05-15',
-    deliveryDate: '2026-05-28',
-    warehouseBranch: 'Bangalore Tech Park Depot',
+    id: 'so-2',
+    orderNumber: 'SO-2026-002',
+    customerName: 'Viyan Tech Labs Bengaluru',
+    status: 'PENDING_DISPATCH',
+    createdAt: '2026-05-20',
+    dispatchDate: '2026-05-28',
+    paymentMode: 'Bank Transfer',
     items: [
-      { name: 'Logitech MX Master 3S', qty: 50, unitPrice: 9500 }
+      { name: 'Dell UltraSharp 32" 4K Monitor', qty: 2, unitPrice: 74900 },
+      { name: 'Logitech MX Master 3S', qty: 5, unitPrice: 9500 }
     ],
-    totalAmount: 475000.00,
-    notes: 'Urgent stock replenishment to satisfy pending employee work requests.'
-  },
-  {
-    id: 'po-3',
-    poNumber: 'PO-2026-003',
-    supplierName: 'Global SaaS Providers',
-    status: 'DRAFT',
-    createdAt: '2026-05-25',
-    deliveryDate: '2026-06-01',
-    warehouseBranch: 'Mumbai Central Hub',
-    items: [
-      { name: 'Microsoft 365 E5 Cloud License', qty: 100, unitPrice: 3100 }
-    ],
-    totalAmount: 310000.00,
-    notes: 'Draft order for Q3 cloud provisioning allocations.'
+    totalAmount: 197300.00,
+    discountPercentage: 5,
+    taxAmount: 35514.00,
+    notes: 'Q2 workspace expansion peripherals order.'
   }
 ];
 
-export const PurchasesPage = () => {
-  const [purchases, setPurchases] = useState<PurchaseOrder[]>([]);
+export const SalesPage = () => {
+  const [sales, setSales] = useState<SalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'pending' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Selected Detail Drawer
-  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showConfigureCards, setShowConfigureCards] = useState(false);
 
-  // Add Form State
-  const [formSupplier, setFormSupplier] = useState('Acme Hardware Corporates');
-  const [formBranch, setFormBranch] = useState('Mumbai Central Hub');
-  const [formDeliveryDate, setFormDeliveryDate] = useState('');
+  // Add Sales Form State
+  const [formCustomer, setFormCustomer] = useState('Aman Sharma (Google Dev)');
+  const [formPayment, setFormPayment] = useState<'UPI' | 'Card' | 'Bank Transfer' | 'Net Banking' | 'Cash'>('UPI');
+  const [formDiscount, setFormDiscount] = useState('0');
   const [formNotes, setFormNotes] = useState('');
   
-  // Dynamic Items list in form
-  const [formItems, setFormItems] = useState<POItem[]>([{ name: 'MacBook Pro 16" M3 Max', qty: 5, unitPrice: 289900 }]);
+  // Dynamic Items in Form
+  const [formItems, setFormItems] = useState<SalesItem[]>([{ name: 'MacBook Pro 16" M3 Max', qty: 1, unitPrice: 289900 }]);
 
-  // Card configuration
+  // Card toggles
   const [visibleCards, setVisibleCards] = useState({
-    active_drafts: true,
-    historic_exp: true,
-    accounts_payable: true,
-    fulfillment_rate: true
+    total_revenue: true,
+    orders_fulfilled: true,
+    outstanding_receivables: true,
+    avg_order_value: true
   });
 
   // Toasts
@@ -126,89 +117,114 @@ export const PurchasesPage = () => {
   useEffect(() => {
     setLoading(true);
     try {
-      const cached = localStorage.getItem('ims_dummy_purchases');
+      const cached = localStorage.getItem('ims_dummy_sales');
       if (cached) {
-        setPurchases(JSON.parse(cached));
+        setSales(JSON.parse(cached));
       } else {
-        localStorage.setItem('ims_dummy_purchases', JSON.stringify(DEFAULT_PURCHASES));
-        setPurchases(DEFAULT_PURCHASES);
+        localStorage.setItem('ims_dummy_sales', JSON.stringify(DEFAULT_SALES));
+        setSales(DEFAULT_SALES);
       }
     } catch {
-      setPurchases(DEFAULT_PURCHASES);
+      setSales(DEFAULT_SALES);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const updateCachedPurchases = (updated: PurchaseOrder[]) => {
-    setPurchases(updated);
+  const updateCachedSales = (updated: SalesOrder[]) => {
+    setSales(updated);
     try {
-      localStorage.setItem('ims_dummy_purchases', JSON.stringify(updated));
+      localStorage.setItem('ims_dummy_sales', JSON.stringify(updated));
     } catch (e) {
       console.error(e);
     }
   };
 
-  // Create PO
-  const handleCreatePO = (e: React.FormEvent) => {
+  // Record Sale
+  const handleRecordSale = (e: React.FormEvent) => {
     e.preventDefault();
     if (formItems.some(i => !i.name.trim() || i.qty <= 0 || i.unitPrice <= 0)) {
-      addToast('error', 'Please configure valid items, quantities, and prices');
+      addToast('error', 'Please define valid items, quantities, and prices');
       return;
     }
 
-    const totalVal = formItems.reduce((sum, i) => sum + (i.qty * i.unitPrice), 0);
+    const subtotal = formItems.reduce((sum, i) => sum + (i.qty * i.unitPrice), 0);
+    const discPct = parseFloat(formDiscount) || 0;
+    const discountVal = subtotal * (discPct / 100);
+    const taxableAmount = subtotal - discountVal;
+    const gstVal = taxableAmount * 0.18; // 18% Standard GST
+    const finalTotal = taxableAmount + gstVal;
 
-    const newPO: PurchaseOrder = {
-      id: `po-${Math.random().toString(36).substring(2, 9)}`,
-      poNumber: `PO-2026-${Math.floor(100 + Math.random() * 900)}`,
-      supplierName: formSupplier,
-      status: 'DRAFT',
+    const newSO: SalesOrder = {
+      id: `so-${Math.random().toString(36).substring(2, 9)}`,
+      orderNumber: `SO-2026-${Math.floor(100 + Math.random() * 900)}`,
+      customerName: formCustomer,
+      status: 'PENDING_DISPATCH',
       createdAt: new Date().toISOString().split('T')[0],
-      deliveryDate: formDeliveryDate || new Date().toISOString().split('T')[0],
-      warehouseBranch: formBranch,
+      dispatchDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0], // 3 days lead time
+      paymentMode: formPayment,
       items: formItems,
-      totalAmount: totalVal,
+      totalAmount: finalTotal,
+      discountPercentage: discPct,
+      taxAmount: gstVal,
       notes: formNotes.trim()
     };
 
-    updateCachedPurchases([newPO, ...purchases]);
-    addToast('success', `Purchase Order "${newPO.poNumber}" created as DRAFT`);
+    updateCachedSales([newSO, ...sales]);
+    addToast('success', `Sales Invoice "${newSO.orderNumber}" recorded successfully`);
     setShowAddModal(false);
-    // Reset items
-    setFormItems([{ name: 'MacBook Pro 16" M3 Max', qty: 5, unitPrice: 289900 }]);
+    setFormItems([{ name: 'MacBook Pro 16" M3 Max', qty: 1, unitPrice: 289900 }]);
+    setFormDiscount('0');
     setFormNotes('');
   };
 
-  // Update Status (Fulfill/Cancel)
-  const handleStatusUpdate = (status: 'PENDING' | 'COMPLETED' | 'CANCELLED') => {
-    if (!selectedPO) return;
+  // Dispatch/Fulfill Sale
+  const handleFulfillOrder = () => {
+    if (!selectedOrder) return;
 
-    const updated = purchases.map((p) => {
-      if (p.id === selectedPO.id) {
-        return { ...p, status };
+    const updated = sales.map((s) => {
+      if (s.id === selectedOrder.id) {
+        return { ...s, status: 'COMPLETED' as const };
       }
-      return p;
+      return s;
     });
 
-    updateCachedPurchases(updated);
-    const found = updated.find(x => x.id === selectedPO.id);
-    if (found) setSelectedPO(found);
+    updateCachedSales(updated);
+    const found = updated.find(x => x.id === selectedOrder.id);
+    if (found) setSelectedOrder(found);
 
-    addToast('success', `Purchase Order status updated to "${status}"`);
+    addToast('success', `Sales Order "${selectedOrder.orderNumber}" is now dispatched and completed`);
   };
 
-  // Delete PO
-  const handleDeletePO = () => {
-    if (!selectedPO) return;
-    const poNum = selectedPO.poNumber;
-    const updated = purchases.filter(p => p.id !== selectedPO.id);
-    updateCachedPurchases(updated);
-    addToast('warning', `Removed Purchase Order "${poNum}" from registry`);
-    setSelectedPO(null);
+  // Void Sale
+  const handleVoidOrder = () => {
+    if (!selectedOrder) return;
+
+    const updated = sales.map((s) => {
+      if (s.id === selectedOrder.id) {
+        return { ...s, status: 'CANCELLED' as const };
+      }
+      return s;
+    });
+
+    updateCachedSales(updated);
+    const found = updated.find(x => x.id === selectedOrder.id);
+    if (found) setSelectedOrder(found);
+
+    addToast('warning', `Sales Order "${selectedOrder.orderNumber}" has been voided`);
   };
 
-  // Add Item to form
+  // Delete Record
+  const handleDeleteSO = () => {
+    if (!selectedOrder) return;
+    const orderNum = selectedOrder.orderNumber;
+    const updated = sales.filter(s => s.id !== selectedOrder.id);
+    updateCachedSales(updated);
+    addToast('warning', `Removed invoice record "${orderNum}"`);
+    setSelectedOrder(null);
+  };
+
+  // Dynamic form items
   const addFormItemField = () => {
     setFormItems([...formItems, { name: '', qty: 1, unitPrice: 1000 }]);
   };
@@ -218,7 +234,7 @@ export const PurchasesPage = () => {
     setFormItems(formItems.filter((_, i) => i !== idx));
   };
 
-  const updateFormItemField = (idx: number, field: keyof POItem, value: string | number) => {
+  const updateFormItemField = (idx: number, field: keyof SalesItem, value: string | number) => {
     const next = formItems.map((item, i) => {
       if (i === idx) {
         return { ...item, [field]: value };
@@ -228,21 +244,21 @@ export const PurchasesPage = () => {
     setFormItems(next);
   };
 
-  // Export CSV
+  // CSV Export
   const handleExportCSV = () => {
-    if (purchases.length === 0) {
-      addToast('error', 'No purchase records to export');
+    if (sales.length === 0) {
+      addToast('error', 'No sales transactions to export');
       return;
     }
-    const headers = ['PO Number', 'Supplier', 'Warehouse Branch', 'Date Created', 'Delivery Date', 'Status', 'Valuation'];
-    const rows = purchases.map(p => [
-      p.poNumber,
-      `"${p.supplierName.replace(/"/g, '""')}"`,
-      p.warehouseBranch,
-      p.createdAt,
-      p.deliveryDate,
-      p.status,
-      `₹${p.totalAmount.toFixed(2)}`
+    const headers = ['Order Number', 'Customer', 'Payment Mode', 'Invoice Date', 'Dispatch Date', 'Status', 'Valuation'];
+    const rows = sales.map(s => [
+      s.orderNumber,
+      `"${s.customerName.replace(/"/g, '""')}"`,
+      s.paymentMode,
+      s.createdAt,
+      s.dispatchDate,
+      s.status,
+      `₹${s.totalAmount.toFixed(2)}`
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -251,72 +267,73 @@ export const PurchasesPage = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `viyan_purchase_orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `viyan_sales_invoices_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    addToast('success', 'Purchase registry successfully exported as CSV');
+    addToast('success', 'Sales logs exported successfully as CSV');
   };
 
   // Calculations
-  const activeDrafts = purchases.filter(p => p.status === 'DRAFT').length;
-  const historicSpend = purchases.filter(p => p.status === 'COMPLETED').reduce((sum, p) => sum + p.totalAmount, 0);
-  const outstandingPayables = purchases.filter(p => p.status === 'PENDING').reduce((sum, p) => sum + p.totalAmount, 0);
-  const fulfillmentRate = purchases.length > 0 
-    ? Math.round((purchases.filter(p => p.status === 'COMPLETED').length / purchases.length) * 100) 
+  const totalRevenue = sales.filter(s => s.status === 'COMPLETED').reduce((sum, s) => sum + s.totalAmount, 0);
+  const ordersFulfilled = sales.filter(s => s.status === 'COMPLETED').length;
+  const outstandingReceivables = sales.filter(s => s.status === 'PENDING_DISPATCH').reduce((sum, s) => sum + s.totalAmount, 0);
+  const completedSales = sales.filter(s => s.status === 'COMPLETED');
+  const avgOrderValue = completedSales.length > 0 
+    ? totalRevenue / completedSales.length 
     : 0;
 
   const cardDefinitions = [
     {
-      id: 'active_drafts',
-      label: 'Active Drafts',
-      value: activeDrafts,
-      subtext: 'Unsubmitted purchase cycles',
-      icon: Clock,
-      className: 'blue',
-      color: '#6366f1'
-    },
-    {
-      id: 'historic_exp',
-      label: 'Historic Expenditure',
-      value: `₹${historicSpend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-      subtext: 'Completed acquisitions valuation',
-      icon: DollarSign,
+      id: 'total_revenue',
+      label: 'Total Revenue',
+      value: `₹${totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+      subtext: 'Fulfillment sales volume',
+      icon: TrendingUp,
       className: 'emerald',
       color: '#059669'
     },
     {
-      id: 'accounts_payable',
-      label: 'Accounts Payable',
-      value: `₹${outstandingPayables.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-      subtext: 'Pending vendor invoices',
-      icon: AlertTriangle,
+      id: 'orders_fulfilled',
+      label: 'Orders Fulfilled',
+      value: ordersFulfilled,
+      subtext: 'Dispatched sales shipments',
+      icon: CheckCircle2,
+      className: 'blue',
+      color: '#6366f1'
+    },
+    {
+      id: 'outstanding_receivables',
+      label: 'Outstanding Receivables',
+      value: `₹${outstandingReceivables.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+      subtext: 'Pending client payments',
+      icon: Clock,
       className: 'rose',
       color: '#e11d48'
     },
     {
-      id: 'fulfillment_rate',
-      label: 'Fulfillment Rate',
-      value: `${fulfillmentRate}%`,
-      subtext: 'Completed vs total PO matrix',
-      icon: Activity,
+      id: 'avg_order_value',
+      label: 'Avg Order Value (AOV)',
+      value: `₹${avgOrderValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+      subtext: 'Average fulfilled sales ticket',
+      icon: ShoppingBag,
       className: 'purple',
       color: '#8b5cf6'
     }
   ];
 
   // Filtering
-  const filteredPOs = purchases.filter((po) => {
+  const filteredSales = sales.filter((s) => {
     const matchesSearch = 
-      po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      po.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      po.warehouseBranch.toLowerCase().includes(searchQuery.toLowerCase());
+      s.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.paymentMode.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
-    if (activeTab === 'draft') return po.status === 'DRAFT';
-    if (activeTab === 'pending') return po.status === 'PENDING';
-    if (activeTab === 'completed') return po.status === 'COMPLETED';
+    if (activeTab === 'pending') return s.status === 'PENDING_DISPATCH';
+    if (activeTab === 'completed') return s.status === 'COMPLETED';
+    if (activeTab === 'cancelled') return s.status === 'CANCELLED';
 
     return true;
   });
@@ -419,13 +436,13 @@ export const PurchasesPage = () => {
           color: #1e293b;
         }
 
-        .purchase-grid {
+        .sales-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 24px;
           margin-top: 24px;
         }
-        .purchase-card-premium {
+        .sales-card-premium {
           background: #ffffff;
           border: 1.5px solid #f1f5f9;
           border-radius: 24px;
@@ -435,7 +452,7 @@ export const PurchasesPage = () => {
           cursor: pointer;
           box-shadow: 0 4px 12px rgba(15, 23, 42, 0.015);
         }
-        .purchase-card-premium:hover {
+        .sales-card-premium:hover {
           transform: translateY(-5px);
           box-shadow: 0 22px 40px rgba(15, 23, 42, 0.06);
           border-color: rgba(99, 102, 241, 0.25);
@@ -453,7 +470,6 @@ export const PurchasesPage = () => {
         }
         .status-badge.completed { background: #ECFDF5; color: #059669; }
         .status-badge.pending { background: #EFF6FF; color: #2563EB; }
-        .status-badge.draft { background: #FFF7ED; color: #EA580C; }
         .status-badge.cancelled { background: #FEF2F2; color: #DC2626; }
 
         .premium-table-container {
@@ -577,11 +593,11 @@ export const PurchasesPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', marginBottom: '6px' }}>
-            <ShoppingCart size={16} />
-            <span style={{ fontWeight: 800, fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Procurement & Supply</span>
+            <TrendingUp size={16} />
+            <span style={{ fontWeight: 800, fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Operations Ledger</span>
           </div>
-          <h1 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>Inbound Procurement</h1>
-          <p style={{ color: '#64748b', marginTop: '4px', fontWeight: 600, fontSize: '0.94rem' }}>Draft purchase orders, authorize fulfillment status, and track incoming logistics cycles.</p>
+          <h1 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>Sales & Invoicing</h1>
+          <p style={{ color: '#64748b', marginTop: '4px', fontWeight: 600, fontSize: '0.94rem' }}>Fulfill client orders, track payments, review discount systems, and issue dispatch clearance nodes.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -605,12 +621,12 @@ export const PurchasesPage = () => {
               boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)', outline: 'none'
             }}
           >
-            <Plus size={20} /> Create Order
+            <Plus size={20} /> Record New Sale
           </button>
         </div>
       </div>
 
-      {/* DYNAMIC KPI CARDS */}
+      {/* KPI METRIC GRIDS */}
       <div className="stats-grid">
         {cardDefinitions.map((c) => {
           if (!visibleCards[c.id as keyof typeof visibleCards]) return null;
@@ -630,13 +646,13 @@ export const PurchasesPage = () => {
         })}
       </div>
 
-      {/* SEARCH AND FILTERS CONTAINER */}
+      {/* ADVANCED CONTROL PANEL */}
       <div className="search-container">
         <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
           <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
-            placeholder="Search purchase orders by ID, supplier or depot..." 
+            placeholder="Search sales logs by ID, client or payment mode..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -649,9 +665,9 @@ export const PurchasesPage = () => {
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button onClick={() => setActiveTab('all')} className={`filter-tab ${activeTab === 'all' ? 'active' : ''}`}>All</button>
-          <button onClick={() => setActiveTab('draft')} className={`filter-tab ${activeTab === 'draft' ? 'active' : ''}`}>Drafts</button>
-          <button onClick={() => setActiveTab('pending')} className={`filter-tab ${activeTab === 'pending' ? 'active' : ''}`}>Pending Invoices</button>
-          <button onClick={() => setActiveTab('completed')} className={`filter-tab ${activeTab === 'completed' ? 'active' : ''}`}>Completed</button>
+          <button onClick={() => setActiveTab('pending')} className={`filter-tab ${activeTab === 'pending' ? 'active' : ''}`}>Pending Dispatch</button>
+          <button onClick={() => setActiveTab('completed')} className={`filter-tab ${activeTab === 'completed' ? 'active' : ''}`}>Fulfilled</button>
+          <button onClick={() => setActiveTab('cancelled')} className={`filter-tab ${activeTab === 'cancelled' ? 'active' : ''}`}>Voided</button>
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
@@ -691,53 +707,53 @@ export const PurchasesPage = () => {
         </div>
       </div>
 
-      {/* DATA CORE */}
+      {/* CORE DATA BODY */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#64748b', fontWeight: 700 }}>
-          Synchronizing procurement nodes...
+          Retrieving sales ledgers...
         </div>
-      ) : filteredPOs.length === 0 ? (
+      ) : filteredSales.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 24px', background: '#ffffff', border: '1.5px solid #f1f5f9', borderRadius: '24px' }}>
           <FileText size={48} color="#cbd5e1" style={{ margin: '0 auto 16px' }} />
-          <h3 style={{ fontWeight: 800, color: '#334155', fontSize: '1.1rem', margin: 0 }}>No Purchase Records</h3>
-          <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '6px', fontWeight: 600 }}>We couldn't locate any active PO cycles matching your constraints.</p>
+          <h3 style={{ fontWeight: 800, color: '#334155', fontSize: '1.1rem', margin: 0 }}>No Invoices Map</h3>
+          <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '6px', fontWeight: 600 }}>We couldn't locate any completed or pending sales logs.</p>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="purchase-grid">
-          {filteredPOs.map((po) => (
+        <div className="sales-grid">
+          {filteredSales.map((s) => (
             <div 
-              key={po.id} 
-              className="purchase-card-premium"
-              onClick={() => setSelectedPO(po)}
+              key={s.id} 
+              className="sales-card-premium"
+              onClick={() => setSelectedOrder(s)}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#6366f1', fontSize: '0.8rem' }}>
-                  {po.poNumber}
+                  {s.orderNumber}
                 </span>
-                <span className={`status-badge ${po.status.toLowerCase()}`}>
-                  {po.status}
+                <span className={`status-badge ${s.status === 'COMPLETED' ? 'completed' : s.status === 'CANCELLED' ? 'cancelled' : 'pending'}`}>
+                  {s.status === 'PENDING_DISPATCH' ? 'Pending Dispatch' : s.status}
                 </span>
               </div>
 
               <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.01em' }}>
-                {po.supplierName}
+                {s.customerName}
               </h3>
-              <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', margin: '0 0 16px 0' }}>
-                <Building2 size={12} /> {po.warehouseBranch}
+              <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, margin: '0 0 16px 0' }}>
+                Paid via: {s.paymentMode}
               </p>
 
               <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>{po.items.length} items ordered</span>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
-                  ₹{po.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>{s.items.length} item(s)</span>
+                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#059669' }}>
+                  ₹{s.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
               </div>
 
               <div style={{ height: '1.5px', background: '#f1f5f9', marginBottom: '14px' }}></div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#94a3b8', fontWeight: 700 }}>
-                <span>Placed: {po.createdAt}</span>
-                <span>Due: {po.deliveryDate}</span>
+                <span>Order: {s.createdAt}</span>
+                <span>Dispatch: {s.dispatchDate}</span>
               </div>
             </div>
           ))}
@@ -747,29 +763,29 @@ export const PurchasesPage = () => {
           <table className="premium-table">
             <thead>
               <tr>
-                <th>PO Number</th>
-                <th>Supplier Vendor</th>
-                <th>Warehouse Branch</th>
+                <th>Order Number</th>
+                <th>Client Name</th>
+                <th>Payment Mode</th>
                 <th>Created Date</th>
-                <th>Delivery Due</th>
-                <th>Items Qty</th>
+                <th>Dispatch Due</th>
                 <th>Total Valuation</th>
+                <th>Discount</th>
                 <th style={{ textAlign: 'right' }}>Status</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPOs.map((po) => (
-                <tr key={po.id} onClick={() => setSelectedPO(po)}>
-                  <td style={{ fontFamily: 'monospace', color: '#6366f1', fontWeight: 800, fontSize: '0.8rem' }}>{po.poNumber}</td>
-                  <td>{po.supplierName}</td>
-                  <td style={{ color: '#475569', fontWeight: 650 }}>{po.warehouseBranch}</td>
-                  <td>{po.createdAt}</td>
-                  <td>{po.deliveryDate}</td>
-                  <td style={{ fontWeight: 800 }}>{po.items.length} item(s)</td>
-                  <td style={{ fontWeight: 850, color: '#0f172a' }}>₹{po.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              {filteredSales.map((s) => (
+                <tr key={s.id} onClick={() => setSelectedOrder(s)}>
+                  <td style={{ fontFamily: 'monospace', color: '#6366f1', fontWeight: 800, fontSize: '0.8rem' }}>{s.orderNumber}</td>
+                  <td>{s.customerName}</td>
+                  <td style={{ color: '#475569', fontWeight: 650 }}>{s.paymentMode}</td>
+                  <td>{s.createdAt}</td>
+                  <td>{s.dispatchDate}</td>
+                  <td style={{ fontWeight: 850, color: '#059669' }}>₹{s.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td style={{ color: '#e11d48' }}>{s.discountPercentage}%</td>
                   <td style={{ textAlign: 'right' }}>
-                    <span className={`status-badge ${po.status.toLowerCase()}`}>
-                      {po.status}
+                    <span className={`status-badge ${s.status === 'COMPLETED' ? 'completed' : s.status === 'CANCELLED' ? 'cancelled' : 'pending'}`}>
+                      {s.status === 'PENDING_DISPATCH' ? 'Pending Dispatch' : s.status}
                     </span>
                   </td>
                 </tr>
@@ -780,15 +796,15 @@ export const PurchasesPage = () => {
       )}
 
       {/* DETAIL DRAWER */}
-      {selectedPO && (
-        <div className="drawer-overlay" onClick={() => setSelectedPO(null)}>
+      {selectedOrder && (
+        <div className="drawer-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="drawer-sheet" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <span className={`status-badge ${selectedPO.status.toLowerCase()}`}>
-                {selectedPO.status} Procurement Node
+              <span className={`status-badge ${selectedOrder.status === 'COMPLETED' ? 'completed' : selectedOrder.status === 'CANCELLED' ? 'cancelled' : 'pending'}`}>
+                {selectedOrder.status === 'PENDING_DISPATCH' ? 'Pending Dispatch' : selectedOrder.status}
               </span>
               <button 
-                onClick={() => setSelectedPO(null)}
+                onClick={() => setSelectedOrder(null)}
                 style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
               >
                 <X size={24} />
@@ -796,13 +812,13 @@ export const PurchasesPage = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ background: '#f0f3ff', padding: '12px', borderRadius: '14px', color: '#6366f1' }}>
-                <ShoppingCart size={24} />
+              <div style={{ background: '#f5f3ff', padding: '12px', borderRadius: '14px', color: '#8b5cf6' }}>
+                <ShoppingBag size={24} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{selectedPO.poNumber}</h2>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{selectedOrder.orderNumber}</h2>
                 <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 800, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <User size={12} /> {selectedPO.supplierName}
+                  <User size={12} /> {selectedOrder.customerName}
                 </div>
               </div>
             </div>
@@ -810,28 +826,28 @@ export const PurchasesPage = () => {
             <div style={{ height: '1.5px', background: '#f1f5f9', margin: '24px 0' }}></div>
 
             <h3 style={{ fontSize: '0.82rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, marginBottom: '12px' }}>
-              Depot Routing & Schedule
+              Transaction Parameters
             </h3>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '16px', border: '1.5px solid #f1f5f9' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Target Warehouse</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginTop: '6px' }}>{selectedPO.warehouseBranch}</div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Payment Mode</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginTop: '6px' }}>{selectedOrder.paymentMode}</div>
               </div>
               
               <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '16px', border: '1.5px solid #f1f5f9' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Delivery Schedule</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginTop: '6px' }}>{selectedPO.deliveryDate}</div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Dispatch Target</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginTop: '6px' }}>{selectedOrder.dispatchDate}</div>
               </div>
             </div>
 
-            {/* Items table */}
+            {/* Bill items */}
             <h3 style={{ fontSize: '0.82rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, marginBottom: '12px' }}>
               Line Items list
             </h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              {selectedPO.items.map((item, idx) => (
+              {selectedOrder.items.map((item, idx) => (
                 <div key={idx} style={{ background: '#ffffff', padding: '14px', borderRadius: '14px', border: '1.5px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1e293b' }}>{item.name}</div>
@@ -846,81 +862,79 @@ export const PurchasesPage = () => {
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '18px 24px', borderRadius: '20px', border: '1.5px solid #f1f5f9', marginBottom: '24px' }}>
-              <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#64748b' }}>Total Gross Value</span>
-              <span style={{ fontSize: '1.4rem', fontWeight: 950, color: '#6366f1' }}>
-                ₹{selectedPO.totalAmount.toLocaleString('en-IN')}
-              </span>
+            {/* Tax and totals */}
+            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '20px', border: '1.5px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>
+                <span>Discount applied</span>
+                <span style={{ color: '#e11d48' }}>-{selectedOrder.discountPercentage}%</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>
+                <span>18% Standard GST</span>
+                <span>₹{selectedOrder.taxAmount.toLocaleString('en-IN')}</span>
+              </div>
+              <div style={{ height: '1px', background: '#e2e8f0', margin: '4px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>Grand Total</span>
+                <span style={{ fontSize: '1.35rem', fontWeight: 950, color: '#059669' }}>
+                  ₹{selectedOrder.totalAmount.toLocaleString('en-IN')}
+                </span>
+              </div>
             </div>
 
-            {selectedPO.notes && (
+            {selectedOrder.notes && (
               <div style={{ background: '#eef2ff', padding: '14px 16px', borderRadius: '16px', border: '1px solid #e0e7ff', marginBottom: '24px', fontSize: '0.84rem', color: '#3730a3', fontWeight: 650, lineHeight: 1.4 }}>
-                <span style={{ fontWeight: 800 }}>Notes: </span> {selectedPO.notes}
+                <span style={{ fontWeight: 800 }}>Notes: </span> {selectedOrder.notes}
               </div>
             )}
 
             {/* Actions */}
             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {selectedPO.status === 'DRAFT' && (
-                <button 
-                  onClick={() => handleStatusUpdate('PENDING')}
-                  style={{
-                    width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: '#ffffff',
-                    fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', outline: 'none',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'
-                  }}
-                >
-                  Submit Purchase Invoice
-                </button>
-              )}
-
-              {selectedPO.status === 'PENDING' && (
+              {selectedOrder.status === 'PENDING_DISPATCH' && (
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button 
-                    onClick={() => handleStatusUpdate('CANCELLED')}
+                    onClick={handleVoidOrder}
                     style={{
                       flex: 1, padding: '14px', borderRadius: '14px', border: '1.5px solid #fca5a5',
                       background: '#fff5f5', color: '#c53030', fontWeight: 800, fontSize: '0.88rem',
                       cursor: 'pointer', outline: 'none'
                     }}
                   >
-                    Void Order
+                    Void Invoice
                   </button>
                   <button 
-                    onClick={() => handleStatusUpdate('COMPLETED')}
+                    onClick={handleFulfillOrder}
                     style={{
                       flex: 2, padding: '14px', borderRadius: '14px', border: 'none',
                       background: '#059669', color: '#ffffff', fontWeight: 800, fontSize: '0.88rem',
                       cursor: 'pointer', outline: 'none', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
                     }}
                   >
-                    Authorize Fulfillment
+                    Authorize Dispatch
                   </button>
                 </div>
               )}
 
               <button 
-                onClick={handleDeletePO}
+                onClick={handleDeleteSO}
                 style={{ 
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
                   padding: '12px', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#ffffff',
                   color: '#be123c', fontWeight: 700, fontSize: '0.86rem', cursor: 'pointer', outline: 'none'
                 }}
               >
-                <Trash2 size={16} /> Delete Registry Record
+                <Trash2 size={16} /> Delete Sales Record
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* CREATE PO MODAL */}
+      {/* RECORD SALE MODAL */}
       {showAddModal && (
         <div className="premium-modal-overlay">
           <div className="premium-modal-content">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Create Purchase Order</h2>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Record Sales Transaction</h2>
               <button 
                 onClick={() => setShowAddModal(false)}
                 style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
@@ -929,49 +943,53 @@ export const PurchasesPage = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreatePO} style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '6px' }}>
+            <form onSubmit={handleRecordSale} style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '6px' }}>
               <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Supplier / Vendor</label>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Client / Customer</label>
                   <select 
-                    value={formSupplier} 
-                    onChange={(e) => setFormSupplier(e.target.value)}
+                    value={formCustomer} 
+                    onChange={(e) => setFormCustomer(e.target.value)}
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
                       fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
                     }}
                   >
-                    <option value="Acme Hardware Corporates">Acme Hardware Corporates</option>
-                    <option value="Logitech Retail Distributors">Logitech Retail Distributors</option>
-                    <option value="Global SaaS Providers">Global SaaS Providers</option>
+                    <option value="Aman Sharma (Google Dev)">Aman Sharma (Google Dev)</option>
+                    <option value="Viyan Tech Labs Bengaluru">Viyan Tech Labs Bengaluru</option>
+                    <option value="Shanmugavel Arumugam">Shanmugavel Arumugam</option>
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Target Warehouse</label>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Payment Mode</label>
                   <select 
-                    value={formBranch} 
-                    onChange={(e) => setFormBranch(e.target.value)}
+                    value={formPayment} 
+                    onChange={(e) => setFormPayment(e.target.value as any)}
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
                       fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
                     }}
                   >
-                    <option value="Mumbai Central Hub">Mumbai Central Hub</option>
-                    <option value="Bangalore Tech Park Depot">Bangalore Tech Park Depot</option>
+                    <option value="UPI">UPI (Immediate Settlement)</option>
+                    <option value="Card">Card</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Net Banking">Net Banking</option>
+                    <option value="Cash">Cash</option>
                   </select>
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Delivery Target</label>
+                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Special Discount (%)</label>
                   <input 
-                    type="date" 
-                    value={formDeliveryDate}
-                    onChange={(e) => setFormDeliveryDate(e.target.value)}
+                    type="number" 
+                    value={formDiscount}
+                    onChange={(e) => setFormDiscount(e.target.value)}
+                    placeholder="e.g. 5"
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
+                      fontSize: '0.88rem', fontWeight: 650, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -981,7 +999,7 @@ export const PurchasesPage = () => {
                     type="text" 
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
-                    placeholder="Ref. setups/cycles..."
+                    placeholder="e.g. Authorized under custom pricing model"
                     style={{
                       width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
                       fontSize: '0.88rem', fontWeight: 650, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
@@ -990,9 +1008,9 @@ export const PurchasesPage = () => {
                 </div>
               </div>
 
-              {/* Items Dynamic Group */}
+              {/* Items Dynamic Config */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h4 style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, margin: 0 }}>Configure Line Items</h4>
+                <h4 style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, margin: 0 }}>Configure Invoice Items</h4>
                 <button 
                   type="button" 
                   onClick={addFormItemField}
@@ -1028,7 +1046,7 @@ export const PurchasesPage = () => {
                   />
                   <input 
                     type="number" 
-                    placeholder="Unit Price"
+                    placeholder="Price"
                     value={item.unitPrice}
                     onChange={(e) => updateFormItemField(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
                     style={{
@@ -1070,7 +1088,7 @@ export const PurchasesPage = () => {
                     boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)', outline: 'none'
                   }}
                 >
-                  Create Purchase Order
+                  Record Sales Invoice
                 </button>
               </div>
             </form>
@@ -1092,13 +1110,13 @@ export const PurchasesPage = () => {
               </button>
             </div>
 
-            <p style={{ fontSize: '0.84rem', color: '#64748b', fontWeight: 600, marginBottom: 16 }}>Select which KPI metric cards to display on top of the Purchases hub.</p>
+            <p style={{ fontSize: '0.84rem', color: '#64748b', fontWeight: 600, marginBottom: 16 }}>Select which KPI metric cards to display on top of the Sales hub.</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
               {Object.keys(visibleCards).map((key) => {
-                const label = key === 'active_drafts' ? 'Active Drafts' :
-                              key === 'historic_exp' ? 'Historic Spend' :
-                              key === 'accounts_payable' ? 'Accounts Payable' : 'Fulfillment Rate';
+                const label = key === 'total_revenue' ? 'Total Revenue' :
+                              key === 'orders_fulfilled' ? 'Orders Fulfilled' :
+                              key === 'outstanding_receivables' ? 'Outstanding Receivables' : 'Avg Order Value';
                 return (
                   <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
                     <input 
@@ -1127,7 +1145,7 @@ export const PurchasesPage = () => {
         </div>
       )}
 
-      {/* TOAST CONTAINER */}
+      {/* TOASTS */}
       <div className="toast-container">
         {toasts.map((t) => (
           <div key={t.id} className="toast-card" style={{ borderLeftColor: t.type === 'success' ? '#059669' : t.type === 'warning' ? '#ea580c' : t.type === 'error' ? '#e11d48' : '#6366f1' }}>
