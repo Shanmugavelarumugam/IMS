@@ -1,36 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Plus, Search, ShoppingCart, FileText, 
-  Activity, DollarSign, Clock, AlertTriangle,
-  X, Trash2, Grid, Table, Download, Settings, Building2, User
-} from 'lucide-react';
+import type { PurchaseOrder, POItem, ToastMessage } from '../types';
 
-interface POItem {
-  name: string;
-  qty: number;
-  unitPrice: number;
-}
+// Import subcomponents
+import { PurchasesHeader } from '../components/PurchasesHeader';
+import { StatsGrid } from '../components/StatsGrid';
+import { SearchFilterBar } from '../components/SearchFilterBar';
+import { PurchasesGrid } from '../components/PurchasesGrid';
+import { PurchasesTable } from '../components/PurchasesTable';
+import { PurchasesDrawer } from '../components/PurchasesDrawer';
+import { PurchasesFormModal } from '../components/PurchasesFormModal';
+import { MetricsConfigModal } from '../components/MetricsConfigModal';
+import { ToastContainer } from '../components/ToastContainer';
 
-interface PurchaseOrder {
-  id: string;
-  poNumber: string;
-  supplierName: string;
-  status: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'CANCELLED';
-  createdAt: string;
-  deliveryDate: string;
-  warehouseBranch: string;
-  items: POItem[];
-  totalAmount: number;
-  notes?: string;
-}
+// Import modular styles
+import '../styles/purchases.css';
+import '../styles/metrics.css';
+import '../styles/table.css';
+import '../styles/modal.css';
+import '../styles/responsive.css';
 
-interface ToastMessage {
-  id: string;
-  type: 'success' | 'info' | 'warning' | 'error';
-  text: string;
-}
-
-const DEFAULT_PURCHASES: PurchaseOrder[] = [
+const DEFAULT_REPORTS: PurchaseOrder[] = [
   {
     id: 'po-1',
     poNumber: 'PO-2026-001',
@@ -76,7 +65,7 @@ const DEFAULT_PURCHASES: PurchaseOrder[] = [
   }
 ];
 
-export const PurchasesPage = () => {
+export const PurchasesPage: React.FC = () => {
   const [purchases, setPurchases] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,15 +78,6 @@ export const PurchasesPage = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showConfigureCards, setShowConfigureCards] = useState(false);
-
-  // Add Form State
-  const [formSupplier, setFormSupplier] = useState('Acme Hardware Corporates');
-  const [formBranch, setFormBranch] = useState('Mumbai Central Hub');
-  const [formDeliveryDate, setFormDeliveryDate] = useState('');
-  const [formNotes, setFormNotes] = useState('');
-  
-  // Dynamic Items list in form
-  const [formItems, setFormItems] = useState<POItem[]>([{ name: 'MacBook Pro 16" M3 Max', qty: 5, unitPrice: 289900 }]);
 
   // Card configuration
   const [visibleCards, setVisibleCards] = useState({
@@ -130,11 +110,11 @@ export const PurchasesPage = () => {
       if (cached) {
         setPurchases(JSON.parse(cached));
       } else {
-        localStorage.setItem('ims_dummy_purchases', JSON.stringify(DEFAULT_PURCHASES));
-        setPurchases(DEFAULT_PURCHASES);
+        localStorage.setItem('ims_dummy_purchases', JSON.stringify(DEFAULT_REPORTS));
+        setPurchases(DEFAULT_REPORTS);
       }
     } catch {
-      setPurchases(DEFAULT_PURCHASES);
+      setPurchases(DEFAULT_REPORTS);
     } finally {
       setLoading(false);
     }
@@ -150,34 +130,31 @@ export const PurchasesPage = () => {
   };
 
   // Create PO
-  const handleCreatePO = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formItems.some(i => !i.name.trim() || i.qty <= 0 || i.unitPrice <= 0)) {
-      addToast('error', 'Please configure valid items, quantities, and prices');
-      return;
-    }
-
-    const totalVal = formItems.reduce((sum, i) => sum + (i.qty * i.unitPrice), 0);
+  const handleCreatePOSubmit = (data: {
+    supplierName: string;
+    warehouseBranch: string;
+    deliveryDate: string;
+    items: POItem[];
+    notes: string;
+  }) => {
+    const totalVal = data.items.reduce((sum, i) => sum + (i.qty * i.unitPrice), 0);
 
     const newPO: PurchaseOrder = {
       id: `po-${Math.random().toString(36).substring(2, 9)}`,
       poNumber: `PO-2026-${Math.floor(100 + Math.random() * 900)}`,
-      supplierName: formSupplier,
+      supplierName: data.supplierName,
       status: 'DRAFT',
       createdAt: new Date().toISOString().split('T')[0],
-      deliveryDate: formDeliveryDate || new Date().toISOString().split('T')[0],
-      warehouseBranch: formBranch,
-      items: formItems,
+      deliveryDate: data.deliveryDate || new Date().toISOString().split('T')[0],
+      warehouseBranch: data.warehouseBranch,
+      items: data.items,
       totalAmount: totalVal,
-      notes: formNotes.trim()
+      notes: data.notes
     };
 
     updateCachedPurchases([newPO, ...purchases]);
     addToast('success', `Purchase Order "${newPO.poNumber}" created as DRAFT`);
     setShowAddModal(false);
-    // Reset items
-    setFormItems([{ name: 'MacBook Pro 16" M3 Max', qty: 5, unitPrice: 289900 }]);
-    setFormNotes('');
   };
 
   // Update Status (Fulfill/Cancel)
@@ -206,26 +183,6 @@ export const PurchasesPage = () => {
     updateCachedPurchases(updated);
     addToast('warning', `Removed Purchase Order "${poNum}" from registry`);
     setSelectedPO(null);
-  };
-
-  // Add Item to form
-  const addFormItemField = () => {
-    setFormItems([...formItems, { name: '', qty: 1, unitPrice: 1000 }]);
-  };
-
-  const removeFormItemField = (idx: number) => {
-    if (formItems.length === 1) return;
-    setFormItems(formItems.filter((_, i) => i !== idx));
-  };
-
-  const updateFormItemField = (idx: number, field: keyof POItem, value: string | number) => {
-    const next = formItems.map((item, i) => {
-      if (i === idx) {
-        return { ...item, [field]: value };
-      }
-      return item;
-    });
-    setFormItems(next);
   };
 
   // Export CSV
@@ -266,45 +223,6 @@ export const PurchasesPage = () => {
     ? Math.round((purchases.filter(p => p.status === 'COMPLETED').length / purchases.length) * 100) 
     : 0;
 
-  const cardDefinitions = [
-    {
-      id: 'active_drafts',
-      label: 'Active Drafts',
-      value: activeDrafts,
-      subtext: 'Unsubmitted purchase cycles',
-      icon: Clock,
-      className: 'blue',
-      color: '#6366f1'
-    },
-    {
-      id: 'historic_exp',
-      label: 'Historic Expenditure',
-      value: `₹${historicSpend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-      subtext: 'Completed acquisitions valuation',
-      icon: DollarSign,
-      className: 'emerald',
-      color: '#059669'
-    },
-    {
-      id: 'accounts_payable',
-      label: 'Accounts Payable',
-      value: `₹${outstandingPayables.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
-      subtext: 'Pending vendor invoices',
-      icon: AlertTriangle,
-      className: 'rose',
-      color: '#e11d48'
-    },
-    {
-      id: 'fulfillment_rate',
-      label: 'Fulfillment Rate',
-      value: `${fulfillmentRate}%`,
-      subtext: 'Completed vs total PO matrix',
-      icon: Activity,
-      className: 'purple',
-      color: '#8b5cf6'
-    }
-  ];
-
   // Filtering
   const filteredPOs = purchases.filter((po) => {
     const matchesSearch = 
@@ -322,374 +240,32 @@ export const PurchasesPage = () => {
   });
 
   return (
-    <div className="fade-in" style={{ animation: 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)', padding: '24px' }}>
-      <style>{`
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        @media (max-width: 1024px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 580px) {
-          .stats-grid { grid-template-columns: 1fr; }
-        }
-        .stat-card-premium {
-          background: #ffffff;
-          border: 1.5px solid #f1f5f9;
-          border-radius: 24px;
-          padding: 24px;
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
-        }
-        .stat-card-premium:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 16px 36px rgba(99, 102, 241, 0.06);
-          border-color: rgba(99, 102, 241, 0.2);
-        }
-        .stat-card-label {
-          font-size: 0.74rem;
-          color: #64748b;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 8px;
-        }
-        .stat-card-value {
-          font-size: 2.0rem;
-          font-weight: 900;
-          color: #0f172a;
-          line-height: 1.1;
-          margin-bottom: 6px;
-        }
-        .stat-card-subtext {
-          font-size: 0.78rem;
-          color: #94a3b8;
-          font-weight: 600;
-        }
-        .stat-card-icon-wrapper {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .stat-card-icon-wrapper.blue { background: #f0f3ff; color: #6366f1; }
-        .stat-card-icon-wrapper.emerald { background: #ecfdf5; color: #059669; }
-        .stat-card-icon-wrapper.purple { background: #f5f3ff; color: #8b5cf6; }
-        .stat-card-icon-wrapper.rose { background: #fff1f2; color: #e11d48; }
-
-        .search-container {
-          background: #ffffff;
-          padding: 14px;
-          border-radius: 20px;
-          border: 1.5px solid #f1f5f9;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 16px;
-          align-items: center;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.01);
-          margin-bottom: 24px;
-        }
-        .filter-tab {
-          border: none;
-          background: transparent;
-          padding: 10px 18px;
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: #64748b;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .filter-tab.active {
-          background: #6366f1;
-          color: #ffffff;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-        }
-        .filter-tab:not(.active):hover {
-          background: #f8fafc;
-          color: #1e293b;
-        }
-
-        .purchase-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 24px;
-          margin-top: 24px;
-        }
-        .purchase-card-premium {
-          background: #ffffff;
-          border: 1.5px solid #f1f5f9;
-          border-radius: 24px;
-          padding: 26px;
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.015);
-        }
-        .purchase-card-premium:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 22px 40px rgba(15, 23, 42, 0.06);
-          border-color: rgba(99, 102, 241, 0.25);
-        }
-
-        .status-badge {
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 0.74rem;
-          font-weight: 800;
-          letter-spacing: 0.03em;
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-        }
-        .status-badge.completed { background: #ECFDF5; color: #059669; }
-        .status-badge.pending { background: #EFF6FF; color: #2563EB; }
-        .status-badge.draft { background: #FFF7ED; color: #EA580C; }
-        .status-badge.cancelled { background: #FEF2F2; color: #DC2626; }
-
-        .premium-table-container {
-          background: #ffffff;
-          border-radius: 24px;
-          border: 1.5px solid #f1f5f9;
-          overflow: hidden;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.01);
-        }
-        .premium-table {
-          width: 100%;
-          border-collapse: separate;
-          border-spacing: 0;
-        }
-        .premium-table th {
-          background: #f8fafc;
-          padding: 18px 24px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          color: #475569;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          border-bottom: 1.5px solid #e2e8f0;
-          text-align: left;
-        }
-        .premium-table td {
-          padding: 20px 24px;
-          border-bottom: 1px solid #f1f5f9;
-          font-size: 0.88rem;
-          color: #334155;
-          font-weight: 600;
-          vertical-align: middle;
-        }
-        .premium-table tr:last-child td { border-bottom: none; }
-        .premium-table tr { cursor: pointer; transition: all 0.2s ease; }
-        .premium-table tr:hover td { background: #f8fafc; }
-
-        .drawer-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(15, 23, 42, 0.4);
-          backdrop-filter: blur(4px);
-          z-index: 1001;
-          display: flex;
-          justify-content: flex-end;
-          animation: fadeIn 0.25s ease-out;
-        }
-        .drawer-sheet {
-          width: 500px;
-          max-width: 100%;
-          background: #ffffff;
-          height: 100%;
-          box-shadow: -10px 0 40px rgba(15, 23, 42, 0.1);
-          padding: 36px;
-          box-sizing: border-box;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          animation: slideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .premium-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(15, 23, 42, 0.5);
-          backdrop-filter: blur(6px);
-          z-index: 1002;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: fadeIn 0.2s ease-out;
-        }
-        .premium-modal-content {
-          background: #ffffff;
-          border-radius: 28px;
-          padding: 36px;
-          width: 580px;
-          max-width: 95%;
-          box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
-          animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .toast-container {
-          position: fixed;
-          bottom: 32px;
-          right: 32px;
-          z-index: 9999;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .toast-card {
-          padding: 16px 20px;
-          border-radius: 16px;
-          background: #ffffff;
-          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-          border-left: 5px solid #6366f1;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: 300px;
-          font-weight: 700;
-          font-size: 0.88rem;
-          color: #1e293b;
-          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideLeft { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-
+    <div className="purchases-fade-in">
       {/* TOP HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', marginBottom: '6px' }}>
-            <ShoppingCart size={16} />
-            <span style={{ fontWeight: 800, fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Procurement & Supply</span>
-          </div>
-          <h1 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>Inbound Procurement</h1>
-          <p style={{ color: '#64748b', marginTop: '4px', fontWeight: 600, fontSize: '0.94rem' }}>Draft purchase orders, authorize fulfillment status, and track incoming logistics cycles.</p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            onClick={() => setShowConfigureCards(true)}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', 
-              borderRadius: '16px', border: '1.5px solid #e2e8f0', background: '#ffffff',
-              color: '#475569', fontWeight: 700, fontSize: '0.86rem', cursor: 'pointer', outline: 'none'
-            }}
-          >
-            <Settings size={18} /> Configure Cards
-          </button>
-
-          <button 
-            onClick={() => setShowAddModal(true)}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', 
-              borderRadius: '16px', border: 'none', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-              color: '#ffffff', fontWeight: 800, fontSize: '0.86rem', cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)', outline: 'none'
-            }}
-          >
-            <Plus size={20} /> Create Order
-          </button>
-        </div>
-      </div>
+      <PurchasesHeader
+        onConfigureCards={() => setShowConfigureCards(true)}
+        onCreateOrder={() => setShowAddModal(true)}
+      />
 
       {/* DYNAMIC KPI CARDS */}
-      <div className="stats-grid">
-        {cardDefinitions.map((c) => {
-          if (!visibleCards[c.id as keyof typeof visibleCards]) return null;
-          const Icon = c.icon;
-          return (
-            <div key={c.id} className="stat-card-premium">
-              <div>
-                <div className="stat-card-label">{c.label}</div>
-                <div className="stat-card-value">{c.value}</div>
-                <div className="stat-card-subtext">{c.subtext}</div>
-              </div>
-              <div className={`stat-card-icon-wrapper ${c.className}`}>
-                <Icon size={22} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <StatsGrid
+        activeDrafts={activeDrafts}
+        historicSpend={historicSpend}
+        outstandingPayables={outstandingPayables}
+        fulfillmentRate={fulfillmentRate}
+        visibleCards={visibleCards}
+      />
 
       {/* SEARCH AND FILTERS CONTAINER */}
-      <div className="search-container">
-        <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-          <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-          <input 
-            type="text" 
-            placeholder="Search purchase orders by ID, supplier or depot..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', padding: '12px 16px 12px 48px', borderRadius: '14px',
-              border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: '0.88rem',
-              fontWeight: 650, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => setActiveTab('all')} className={`filter-tab ${activeTab === 'all' ? 'active' : ''}`}>All</button>
-          <button onClick={() => setActiveTab('draft')} className={`filter-tab ${activeTab === 'draft' ? 'active' : ''}`}>Drafts</button>
-          <button onClick={() => setActiveTab('pending')} className={`filter-tab ${activeTab === 'pending' ? 'active' : ''}`}>Pending Invoices</button>
-          <button onClick={() => setActiveTab('completed')} className={`filter-tab ${activeTab === 'completed' ? 'active' : ''}`}>Completed</button>
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-          <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
-            <button 
-              onClick={() => setViewMode('grid')}
-              style={{ 
-                padding: '6px 10px', borderRadius: '8px', border: 'none', 
-                background: viewMode === 'grid' ? '#ffffff' : 'transparent',
-                color: viewMode === 'grid' ? '#6366f1' : '#64748b', cursor: 'pointer', outline: 'none'
-              }}
-            >
-              <Grid size={16} />
-            </button>
-            <button 
-              onClick={() => setViewMode('table')}
-              style={{ 
-                padding: '6px 10px', borderRadius: '8px', border: 'none', 
-                background: viewMode === 'table' ? '#ffffff' : 'transparent',
-                color: viewMode === 'table' ? '#6366f1' : '#64748b', cursor: 'pointer', outline: 'none'
-              }}
-            >
-              <Table size={16} />
-            </button>
-          </div>
-
-          <button 
-            onClick={handleExportCSV}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', 
-              borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#ffffff',
-              color: '#475569', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', outline: 'none'
-            }}
-          >
-            <Download size={16} /> Export
-          </button>
-        </div>
-      </div>
+      <SearchFilterBar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onExportCSV={handleExportCSV}
+      />
 
       {/* DATA CORE */}
       {loading ? (
@@ -698,449 +274,50 @@ export const PurchasesPage = () => {
         </div>
       ) : filteredPOs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 24px', background: '#ffffff', border: '1.5px solid #f1f5f9', borderRadius: '24px' }}>
-          <FileText size={48} color="#cbd5e1" style={{ margin: '0 auto 16px' }} />
           <h3 style={{ fontWeight: 800, color: '#334155', fontSize: '1.1rem', margin: 0 }}>No Purchase Records</h3>
           <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginTop: '6px', fontWeight: 600 }}>We couldn't locate any active PO cycles matching your constraints.</p>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="purchase-grid">
-          {filteredPOs.map((po) => (
-            <div 
-              key={po.id} 
-              className="purchase-card-premium"
-              onClick={() => setSelectedPO(po)}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#6366f1', fontSize: '0.8rem' }}>
-                  {po.poNumber}
-                </span>
-                <span className={`status-badge ${po.status.toLowerCase()}`}>
-                  {po.status}
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.01em' }}>
-                {po.supplierName}
-              </h3>
-              <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', margin: '0 0 16px 0' }}>
-                <Building2 size={12} /> {po.warehouseBranch}
-              </p>
-
-              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>{po.items.length} items ordered</span>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
-                  ₹{po.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                </span>
-              </div>
-
-              <div style={{ height: '1.5px', background: '#f1f5f9', marginBottom: '14px' }}></div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#94a3b8', fontWeight: 700 }}>
-                <span>Placed: {po.createdAt}</span>
-                <span>Due: {po.deliveryDate}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <PurchasesGrid
+          filteredPOs={filteredPOs}
+          onSelectPO={setSelectedPO}
+        />
       ) : (
-        <div className="premium-table-container">
-          <table className="premium-table">
-            <thead>
-              <tr>
-                <th>PO Number</th>
-                <th>Supplier Vendor</th>
-                <th>Warehouse Branch</th>
-                <th>Created Date</th>
-                <th>Delivery Due</th>
-                <th>Items Qty</th>
-                <th>Total Valuation</th>
-                <th style={{ textAlign: 'right' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPOs.map((po) => (
-                <tr key={po.id} onClick={() => setSelectedPO(po)}>
-                  <td style={{ fontFamily: 'monospace', color: '#6366f1', fontWeight: 800, fontSize: '0.8rem' }}>{po.poNumber}</td>
-                  <td>{po.supplierName}</td>
-                  <td style={{ color: '#475569', fontWeight: 650 }}>{po.warehouseBranch}</td>
-                  <td>{po.createdAt}</td>
-                  <td>{po.deliveryDate}</td>
-                  <td style={{ fontWeight: 800 }}>{po.items.length} item(s)</td>
-                  <td style={{ fontWeight: 850, color: '#0f172a' }}>₹{po.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <span className={`status-badge ${po.status.toLowerCase()}`}>
-                      {po.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PurchasesTable
+          filteredPOs={filteredPOs}
+          onSelectPO={setSelectedPO}
+        />
       )}
 
       {/* DETAIL DRAWER */}
-      {selectedPO && (
-        <div className="drawer-overlay" onClick={() => setSelectedPO(null)}>
-          <div className="drawer-sheet" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <span className={`status-badge ${selectedPO.status.toLowerCase()}`}>
-                {selectedPO.status} Procurement Node
-              </span>
-              <button 
-                onClick={() => setSelectedPO(null)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ background: '#f0f3ff', padding: '12px', borderRadius: '14px', color: '#6366f1' }}>
-                <ShoppingCart size={24} />
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{selectedPO.poNumber}</h2>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 800, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <User size={12} /> {selectedPO.supplierName}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ height: '1.5px', background: '#f1f5f9', margin: '24px 0' }}></div>
-
-            <h3 style={{ fontSize: '0.82rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, marginBottom: '12px' }}>
-              Depot Routing & Schedule
-            </h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '16px', border: '1.5px solid #f1f5f9' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Target Warehouse</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginTop: '6px' }}>{selectedPO.warehouseBranch}</div>
-              </div>
-              
-              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '16px', border: '1.5px solid #f1f5f9' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>Delivery Schedule</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginTop: '6px' }}>{selectedPO.deliveryDate}</div>
-              </div>
-            </div>
-
-            {/* Items table */}
-            <h3 style={{ fontSize: '0.82rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, marginBottom: '12px' }}>
-              Line Items list
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              {selectedPO.items.map((item, idx) => (
-                <div key={idx} style={{ background: '#ffffff', padding: '14px', borderRadius: '14px', border: '1.5px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1e293b' }}>{item.name}</div>
-                    <div style={{ fontSize: '0.76rem', color: '#94a3b8', fontWeight: 700, marginTop: '4px' }}>
-                      {item.qty} units × ₹{item.unitPrice.toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '0.94rem', fontWeight: 850, color: '#0f172a' }}>
-                    ₹{(item.qty * item.unitPrice).toLocaleString('en-IN')}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '18px 24px', borderRadius: '20px', border: '1.5px solid #f1f5f9', marginBottom: '24px' }}>
-              <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#64748b' }}>Total Gross Value</span>
-              <span style={{ fontSize: '1.4rem', fontWeight: 950, color: '#6366f1' }}>
-                ₹{selectedPO.totalAmount.toLocaleString('en-IN')}
-              </span>
-            </div>
-
-            {selectedPO.notes && (
-              <div style={{ background: '#eef2ff', padding: '14px 16px', borderRadius: '16px', border: '1px solid #e0e7ff', marginBottom: '24px', fontSize: '0.84rem', color: '#3730a3', fontWeight: 650, lineHeight: 1.4 }}>
-                <span style={{ fontWeight: 800 }}>Notes: </span> {selectedPO.notes}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {selectedPO.status === 'DRAFT' && (
-                <button 
-                  onClick={() => handleStatusUpdate('PENDING')}
-                  style={{
-                    width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: '#ffffff',
-                    fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', outline: 'none',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)'
-                  }}
-                >
-                  Submit Purchase Invoice
-                </button>
-              )}
-
-              {selectedPO.status === 'PENDING' && (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    onClick={() => handleStatusUpdate('CANCELLED')}
-                    style={{
-                      flex: 1, padding: '14px', borderRadius: '14px', border: '1.5px solid #fca5a5',
-                      background: '#fff5f5', color: '#c53030', fontWeight: 800, fontSize: '0.88rem',
-                      cursor: 'pointer', outline: 'none'
-                    }}
-                  >
-                    Void Order
-                  </button>
-                  <button 
-                    onClick={() => handleStatusUpdate('COMPLETED')}
-                    style={{
-                      flex: 2, padding: '14px', borderRadius: '14px', border: 'none',
-                      background: '#059669', color: '#ffffff', fontWeight: 800, fontSize: '0.88rem',
-                      cursor: 'pointer', outline: 'none', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
-                    }}
-                  >
-                    Authorize Fulfillment
-                  </button>
-                </div>
-              )}
-
-              <button 
-                onClick={handleDeletePO}
-                style={{ 
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
-                  padding: '12px', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#ffffff',
-                  color: '#be123c', fontWeight: 700, fontSize: '0.86rem', cursor: 'pointer', outline: 'none'
-                }}
-              >
-                <Trash2 size={16} /> Delete Registry Record
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PurchasesDrawer
+        po={selectedPO}
+        onClose={() => setSelectedPO(null)}
+        onStatusUpdate={handleStatusUpdate}
+        onDelete={handleDeletePO}
+      />
 
       {/* CREATE PO MODAL */}
-      {showAddModal && (
-        <div className="premium-modal-overlay">
-          <div className="premium-modal-content">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Create Purchase Order</h2>
-              <button 
-                onClick={() => setShowAddModal(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
-              >
-                <X size={22} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreatePO} style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '6px' }}>
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Supplier / Vendor</label>
-                  <select 
-                    value={formSupplier} 
-                    onChange={(e) => setFormSupplier(e.target.value)}
-                    style={{
-                      width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="Acme Hardware Corporates">Acme Hardware Corporates</option>
-                    <option value="Logitech Retail Distributors">Logitech Retail Distributors</option>
-                    <option value="Global SaaS Providers">Global SaaS Providers</option>
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Target Warehouse</label>
-                  <select 
-                    value={formBranch} 
-                    onChange={(e) => setFormBranch(e.target.value)}
-                    style={{
-                      width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="Mumbai Central Hub">Mumbai Central Hub</option>
-                    <option value="Bangalore Tech Park Depot">Bangalore Tech Park Depot</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Delivery Target</label>
-                  <input 
-                    type="date" 
-                    value={formDeliveryDate}
-                    onChange={(e) => setFormDeliveryDate(e.target.value)}
-                    style={{
-                      width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.74rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', marginBottom: '6px' }}>Internal Notes</label>
-                  <input 
-                    type="text" 
-                    value={formNotes}
-                    onChange={(e) => setFormNotes(e.target.value)}
-                    placeholder="Ref. setups/cycles..."
-                    style={{
-                      width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.88rem', fontWeight: 650, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Items Dynamic Group */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h4 style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, margin: 0 }}>Configure Line Items</h4>
-                <button 
-                  type="button" 
-                  onClick={addFormItemField}
-                  style={{
-                    background: 'none', border: 'none', color: '#6366f1', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', gap: '4px'
-                  }}
-                >
-                  <Plus size={14} /> Add Item
-                </button>
-              </div>
-
-              {formItems.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Product Name"
-                    value={item.name}
-                    onChange={(e) => updateFormItemField(idx, 'name', e.target.value)}
-                    style={{
-                      flex: 2, padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.84rem', fontWeight: 650, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  />
-                  <input 
-                    type="number" 
-                    placeholder="Qty"
-                    value={item.qty}
-                    onChange={(e) => updateFormItemField(idx, 'qty', parseInt(e.target.value, 10) || 0)}
-                    style={{
-                      width: '60px', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  />
-                  <input 
-                    type="number" 
-                    placeholder="Unit Price"
-                    value={item.unitPrice}
-                    onChange={(e) => updateFormItemField(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '100px', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0',
-                      fontSize: '0.84rem', fontWeight: 700, color: '#1e293b', outline: 'none', boxSizing: 'border-box'
-                    }}
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => removeFormItemField(idx)}
-                    disabled={formItems.length === 1}
-                    style={{
-                      background: 'none', border: 'none', color: formItems.length === 1 ? '#cbd5e1' : '#be123c', cursor: 'pointer', padding: '6px', outline: 'none'
-                    }}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setShowAddModal(false)}
-                  style={{
-                    flex: 1, padding: '14px', borderRadius: '14px', border: '1.5px solid #e2e8f0',
-                    background: '#ffffff', color: '#475569', fontWeight: 700, fontSize: '0.88rem',
-                    cursor: 'pointer', outline: 'none'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  style={{
-                    flex: 2, padding: '14px', borderRadius: '14px', border: 'none',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: '#ffffff',
-                    fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)', outline: 'none'
-                  }}
-                >
-                  Create Purchase Order
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <PurchasesFormModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleCreatePOSubmit}
+        onErrorToast={(msg) => addToast('error', msg)}
+      />
 
       {/* CONFIGURE CARDS MODAL */}
-      {showConfigureCards && (
-        <div className="premium-modal-overlay">
-          <div className="premium-modal-content" style={{ width: '400px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Configure Cards</h3>
-              <button 
-                onClick={() => setShowConfigureCards(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', outline: 'none' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: '0.84rem', color: '#64748b', fontWeight: 600, marginBottom: 16 }}>Select which KPI metric cards to display on top of the Purchases hub.</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-              {Object.keys(visibleCards).map((key) => {
-                const label = key === 'active_drafts' ? 'Active Drafts' :
-                              key === 'historic_exp' ? 'Historic Spend' :
-                              key === 'accounts_payable' ? 'Accounts Payable' : 'Fulfillment Rate';
-                return (
-                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox"
-                      checked={visibleCards[key as keyof typeof visibleCards]}
-                      onChange={(e) => setVisibleCards(prev => ({ ...prev, [key]: e.target.checked }))}
-                      style={{ width: '16px', height: '16px', accentColor: '#6366f1' }}
-                    />
-                    {label}
-                  </label>
-                );
-              })}
-            </div>
-
-            <button 
-              onClick={() => setShowConfigureCards(false)}
-              style={{
-                width: '100%', padding: '12px', borderRadius: '12px', border: 'none',
-                background: '#6366f1', color: '#ffffff', fontWeight: 800, fontSize: '0.86rem',
-                cursor: 'pointer', outline: 'none'
-              }}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
+      <MetricsConfigModal
+        isOpen={showConfigureCards}
+        onClose={() => setShowConfigureCards(false)}
+        visibleCards={visibleCards}
+        onChange={(key, checked) => setVisibleCards(prev => ({ ...prev, [key]: checked }))}
+      />
 
       {/* TOAST CONTAINER */}
-      <div className="toast-container">
-        {toasts.map((t) => (
-          <div key={t.id} className="toast-card" style={{ borderLeftColor: t.type === 'success' ? '#059669' : t.type === 'warning' ? '#ea580c' : t.type === 'error' ? '#e11d48' : '#6366f1' }}>
-            <span style={{ flex: 1 }}>{t.text}</span>
-            <button 
-              onClick={() => removeToast(t.id)}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, outline: 'none' }}
-            >
-              <X size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+      <ToastContainer
+        toasts={toasts}
+        onRemoveToast={removeToast}
+      />
     </div>
   );
 };

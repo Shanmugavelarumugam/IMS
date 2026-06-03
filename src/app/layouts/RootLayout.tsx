@@ -20,21 +20,30 @@ const Sidebar = ({
   
   const sections = [
     {
-      title: 'Operations',
+      title: 'Items',
       links: [
-        { path: '/app', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/app/products', icon: Package, label: 'Products' },
         { path: '/app/categories', icon: Tags, label: 'Categories' },
+      ]
+    },
+    {
+      title: 'Inventory',
+      links: [
         { path: '/app/inventory', icon: Boxes, label: 'Stock Management' },
       ]
     },
     {
-      title: 'Management',
+      title: 'Sales',
+      links: [
+        { path: '/app/sales', icon: TrendingUp, label: 'Sales Orders' },
+        { path: '/app/customers', icon: UserRound, label: 'Customers' },
+      ]
+    },
+    {
+      title: 'Purchases',
       links: [
         { path: '/app/purchases', icon: ShoppingCart, label: 'Purchase Orders' },
         { path: '/app/suppliers', icon: Truck, label: 'Suppliers' },
-        { path: '/app/sales', icon: TrendingUp, label: 'Sales Orders' },
-        { path: '/app/customers', icon: UserRound, label: 'Customers' },
       ]
     },
     {
@@ -81,6 +90,19 @@ const Sidebar = ({
       </div>
       
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        {/* Standalone Dashboard Link */}
+        <div className="nav-links" style={{ marginBottom: '12px', marginTop: '8px' }}>
+          <Link
+            to="/app"
+            onClick={onClose}
+            className={`nav-item ${location.pathname === '/app' ? 'active' : ''}`}
+            data-tooltip="Dashboard"
+          >
+            <LayoutDashboard size={20} strokeWidth={location.pathname === '/app' ? 2.6 : 2.2} />
+            {!isCollapsed && <span>Dashboard</span>}
+          </Link>
+        </div>
+
         {sections.map((section) => (
           <div key={section.title} style={{ marginBottom: '12px' }}>
             <div className="nav-section-title">{section.title}</div>
@@ -181,7 +203,15 @@ const TopBar = ({ onMenuClick }: { onMenuClick: () => void }) => {
 
   const breadcrumb = getBreadcrumbs();
 
-  const hideBreadcrumbsAndSearch = location.pathname === '/app/suppliers' || location.pathname === '/app/customers' || location.pathname === '/app/products' || location.pathname === '/app/reports';
+  const hideBreadcrumbsAndSearch = 
+    location.pathname === '/app/suppliers' || 
+    location.pathname === '/app/customers' || 
+    location.pathname === '/app/products' || 
+    location.pathname === '/app/reports' || 
+    location.pathname === '/app/categories' ||
+    location.pathname === '/app/inventory' ||
+    location.pathname === '/app/purchases' ||
+    location.pathname === '/app/sales';
 
   return (
     <header className="top-bar-header" style={{

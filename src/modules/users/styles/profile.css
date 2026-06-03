@@ -1,0 +1,75 @@
+/* profile.css — profile page styles */
+
+@keyframes profileFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.profile-page-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: profileFadeIn 0.5s ease;
+}
+
+/* Frosted glass card */
+.viyan-glass-card {
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid #F3F4F6;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.02), 0 4px 6px rgba(0, 0, 0, 0.01);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Gradient hero cover */
+.profile-gradient-header {
+  height: 160px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  position: relative;
+}
+
+/* Premium form input */
+.premium-input {
+  width: 100%;
+  padding: 14px 14px 14px 44px;
+  border-radius: 12px;
+  border: 1.5px solid #E5E7EB;
+  background: #F9FAFB;
+  font-weight: 600;
+  color: #111827;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.premium-input:focus {
+  border-color: #6366f1;
+  background: #FFF;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* Status badge pill */
+.profile-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Content grid: 1.6fr + 1fr */
+.profile-content-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 860px) {
+  .profile-content-grid {
+    grid-template-columns: 1fr;
+  }
+}

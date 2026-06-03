@@ -1,0 +1,90 @@
+/* modal.css */
+
+.premium-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: salesFadeIn 0.2s ease-out;
+}
+
+.premium-modal-content {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 36px;
+  width: 580px;
+  max-width: 95%;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
+  animation: salesScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Toast styling */
+.toast-container {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast-card {
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  border-left: 5px solid #6366f1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #1e293b;
+  animation: salesSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Control filter panel containers */
+.search-container {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1.5px solid #f1f5f9;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+  margin-bottom: 24px;
+}
+
+.filter-tab {
+  border: none;
+  background: transparent;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-tab.active {
+  background: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.filter-tab:not(.active):hover {
+  background: #f8fafc;
+  color: #1e293b;
+}

@@ -1,0 +1,44 @@
+/* Stunning Luxury Dashboard Theme */
+.dashboard-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Premium Card styling */
+.luxury-glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(9, 14, 29, 0.02), 0 20px 40px rgba(9, 14, 29, 0.04);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.luxury-glass-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 30px 60px rgba(99, 102, 241, 0.08), 0 1px 15px rgba(9, 14, 29, 0.02);
+}
+
+/* Scrollbar customizing */
+.custom-scroll-bar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scroll-bar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.custom-scroll-bar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 4px;
+}
+
+.custom-scroll-bar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.3);
+}

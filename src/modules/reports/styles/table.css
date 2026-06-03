@@ -1,0 +1,112 @@
+/* table.css */
+
+/* Exquisite Table structure */
+.exquisite-table-wrapper {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e8ecf4;
+}
+
+.exquisite-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.exquisite-table th {
+  background: #f8fafc;
+  padding: 14px 18px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1.5px solid #e8ecf4;
+  text-align: left;
+}
+
+.exquisite-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.exquisite-table tr:last-child td {
+  border-bottom: none;
+}
+
+.exquisite-table tr {
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.exquisite-table tr:hover td {
+  background: #fcfbfe;
+}
+
+.icon-pill-violet {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f5f3ff;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+}
+
+.exquisite-table tr:hover .icon-pill-violet {
+  background: var(--primary-glow);
+  color: #ffffff;
+  transform: scale(1.06) rotate(3deg);
+}
+
+/* Button styles */
+.btn-outline-violet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(124, 58, 237, 0.15);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  color: #475569;
+  font-weight: 650;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-outline-violet:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+}
+
+.btn-primary-glow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: none;
+  background: var(--primary-glow);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+}
+
+.btn-primary-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.35);
+}

@@ -1,0 +1,80 @@
+/* purchases.css */
+
+.purchase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.purchase-card-premium {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 24px;
+  padding: 26px;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.015);
+}
+
+.purchase-card-premium:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.06);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+/* Premium sliding drawer */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1001;
+  display: flex;
+  justify-content: flex-end;
+  animation: purchasesFadeIn 0.25s ease-out;
+}
+
+.drawer-sheet {
+  width: 500px;
+  max-width: 100%;
+  background: #ffffff;
+  height: 100%;
+  box-shadow: -10px 0 40px rgba(15, 23, 42, 0.1);
+  padding: 36px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: purchasesSlideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Core fade-in layout wrap */
+.purchases-fade-in {
+  animation: purchasesFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 24px;
+}
+
+@keyframes purchasesFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes purchasesSlideLeft {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes purchasesScaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes purchasesSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

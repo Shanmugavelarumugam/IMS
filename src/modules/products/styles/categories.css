@@ -1,0 +1,80 @@
+/* categories.css — layout, animations, drawer */
+
+@keyframes categoriesFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes categoriesSlideLeft {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes categoriesScaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes categoriesSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Page wrapper fade-in */
+.categories-page-wrapper {
+  animation: categoriesFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 24px;
+}
+
+/* Detail drawer */
+.cat-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1001;
+  display: flex;
+  justify-content: flex-end;
+  animation: categoriesFadeIn 0.25s ease-out;
+}
+
+.cat-drawer-sheet {
+  width: 480px;
+  max-width: 100%;
+  background: #ffffff;
+  height: 100%;
+  box-shadow: -10px 0 40px rgba(15, 23, 42, 0.1);
+  padding: 36px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: categoriesSlideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Shared status badge */
+.cat-status-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cat-status-badge.active   { background: #ECFDF5; color: #059669; }
+.cat-status-badge.inactive { background: #FFF7ED; color: #EA580C; }
+
+/* Empty state */
+.cat-empty-state {
+  text-align: center;
+  padding: 80px 24px;
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 24px;
+}

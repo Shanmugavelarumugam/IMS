@@ -1,0 +1,23 @@
+/* settings-responsive.css — breakpoint overrides */
+
+@media (max-width: 800px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .settings-card {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-page-wrapper {
+    padding: 16px;
+  }
+}

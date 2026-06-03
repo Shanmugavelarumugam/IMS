@@ -1,0 +1,142 @@
+/* modal.css */
+
+/* Glass Modal Styles */
+.glass-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: reportsFadeIn 0.25s ease-out;
+}
+
+.glass-modal-box {
+  background: #ffffff;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-radius: 24px;
+  width: 720px;
+  max-width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px -12px rgba(124, 58, 237, 0.12);
+  animation: reportsScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Format custom chip choices */
+.format-selection-group {
+  display: flex;
+  gap: 10px;
+}
+
+.format-selection-chip {
+  flex: 1;
+  border: 1.5px solid #e8ecf4;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.format-selection-chip.active {
+  border-color: #7c3aed;
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+/* Slider switch */
+.custom-toggle-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1.5px solid #e8ecf4;
+  border-radius: 12px;
+}
+
+.toggle-switch-el {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.toggle-switch-el input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider-el {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 20px;
+}
+
+.toggle-slider-el:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider-el {
+  background-color: #7c3aed;
+}
+
+input:checked + .toggle-slider-el:before {
+  transform: translateX(18px);
+}
+
+/* Toasts alert block */
+.alert-toasts-box {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert-toast-item {
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #7c3aed;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  animation: reportsSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
